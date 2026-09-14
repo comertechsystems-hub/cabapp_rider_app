@@ -26,7 +26,7 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     final authVm = context.watch<AuthViewModel>();
-    final isOtpStep = authVm.state == AuthState.otpSent;
+    final isOtpStep = authVm.isOtpSent;
 
     return Scaffold(
       body: SafeArea(
@@ -161,7 +161,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: authVm.state == AuthState.loading
+                  onPressed: authVm.isLoading
                       ? null
                       : () async {
                           if (!isOtpStep) {
@@ -179,7 +179,7 @@ class _AuthScreenState extends State<AuthScreen> {
                             }
                           }
                         },
-                  child: authVm.state == AuthState.loading
+                  child: authVm.isLoading
                       ? const SizedBox(
                           width: 24,
                           height: 24,

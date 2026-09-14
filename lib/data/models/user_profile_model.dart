@@ -1,3 +1,5 @@
+import '../../domain/entities/rider_profile.dart';
+
 class UserProfileModel {
   final String email;
   final String phone;
@@ -21,7 +23,8 @@ class UserProfileModel {
     return UserProfileModel(
       email: json['email'] ?? json['user'] ?? '',
       phone: json['phone'] ?? json['phone_number'] ?? '',
-      fullName: json['full_name'] ?? '${json['first_name'] ?? ''} ${json['last_name'] ?? ''}'.trim(),
+      fullName: json['full_name'] ??
+          '${json['first_name'] ?? ''} ${json['last_name'] ?? ''}'.trim(),
       riderId: json['rider_id'] ?? json['name'],
       status: json['status'] ?? 'ACTIVE',
       rating: (json['rating'] as num?)?.toDouble() ?? 5.0,
@@ -38,4 +41,18 @@ class UserProfileModel {
         'rating': rating,
         'total_rides': totalRides,
       };
+
+  RiderProfile toRiderProfile() => RiderProfile(
+        id: riderId ?? '',
+        user: email,
+        phoneNumber: phone,
+        firstName: fullName.isNotEmpty ? fullName.split(' ').first : null,
+        lastName: fullName.split(' ').length > 1
+            ? fullName.split(' ').sublist(1).join(' ')
+            : null,
+        email: email,
+        rating: rating,
+        totalTrips: totalRides,
+        status: status,
+      );
 }

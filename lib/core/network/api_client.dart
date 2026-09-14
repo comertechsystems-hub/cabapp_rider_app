@@ -14,7 +14,13 @@ class ApiException implements Exception {
   String toString() => 'ApiException($statusCode): $message';
 }
 
-class ApiClient {
+/// Abstract contract for API client operations
+abstract class IApiClient {
+  Future<dynamic> get(String path, {Map<String, dynamic>? queryParams});
+  Future<dynamic> post(String path, {Map<String, dynamic>? body});
+}
+
+class ApiClient implements IApiClient {
   final String baseUrl;
   final SessionManager? sessionManager;
   final http.Client _client;
@@ -40,6 +46,7 @@ class ApiClient {
     return headers;
   }
 
+  @override
   Future<dynamic> get(String path, {Map<String, dynamic>? queryParams}) async {
     final uri = Uri.parse('$baseUrl$path').replace(
       queryParameters: queryParams?.map((k, v) => MapEntry(k, v.toString())),
@@ -48,6 +55,7 @@ class ApiClient {
     return _handleResponse(response);
   }
 
+  @override
   Future<dynamic> post(String path, {Map<String, dynamic>? body}) async {
     final uri = Uri.parse('$baseUrl$path');
     final response = await _client.post(
@@ -81,5 +89,37 @@ class ApiClient {
     } catch (_) {}
 
     throw ApiException(errorMsg, statusCode: response.statusCode);
+  }
+}
+
+/// In-memory mock API client for unit testing without live network
+class MockApiClient implements IApiClient {
+  final Map<String, dynamic> responses = {};
+  final List<Map<String, dynamic>> callLogs = [];
+
+  void setResponse(String path, dynamic response) {
+    responses[path] = response;
+  }
+
+  @override
+  Future<dynamic> get(String path, {Map<String, dynamic>? queryParams}) async {
+    callLogs.add({'method': 'GET', 'path': path, 'queryParams': queryParams});
+    if (responses.containsKey(path)) {
+      final res = responses[path];
+      if (res is Exception) throw res;
+      return res;
+    }
+    return {'success': true};
+  }
+
+  @override
+  Future<dynamic> post(String path, {Map<String, dynamic>? body}) async {
+    callLogs.add({'method': 'POST', 'path': path, 'body': body});
+    if (responses.containsKey(path)) {
+      final res = responses[path];
+      if (res is Exception) throw res;
+      return res;
+    }
+    return {'success': true};
   }
 }

@@ -1,89 +1,121 @@
 import 'package:flutter/foundation.dart';
+import '../../core/state/view_state.dart';
+import '../../domain/entities/rider_profile.dart';
+import '../../domain/repositories/i_auth_repository.dart';
 import '../../data/models/user_profile_model.dart';
-import '../../data/repositories/auth_repository.dart';
 
 enum AuthState { initial, loading, otpSent, authenticated, error }
 
-class AuthViewModel extends ChangeNotifier {
-  final AuthRepository _authRepo;
+class AuthViewModel extends ChangeNotifier with ViewStateMixin {
+  final IAuthRepository authRepo;
 
   AuthState _state = AuthState.initial;
-  UserProfileModel? _userProfile;
-  String? _errorMessage;
+  RiderProfile? _profile;
   String? _phoneNumber;
 
-  AuthViewModel(this._authRepo) {
+  AuthViewModel(this.authRepo) {
     _checkInitialAuth();
   }
 
-  AuthState get state => _state;
-  UserProfileModel? get userProfile => _userProfile;
-  String? get errorMessage => _errorMessage;
+  AuthState get authState => _state;
+  bool get isOtpSent => _state == AuthState.otpSent;
+
+  RiderProfile? get profile => _profile;
+  UserProfileModel? get userProfile => _profile != null
+      ? UserProfileModel(
+          email: _profile!.user,
+          phone: _profile!.phoneNumber,
+          fullName: _profile!.fullName,
+          riderId: _profile!.id,
+          status: _profile!.status,
+          rating: _profile!.rating,
+          totalRides: _profile!.totalTrips,
+        )
+      : null;
+
   String? get phoneNumber => _phoneNumber;
-  bool get isAuthenticated => _authRepo.sessionManager.isAuthenticated;
+  bool get isAuthenticated => _profile != null;
 
   Future<void> _checkInitialAuth() async {
-    if (_authRepo.sessionManager.isAuthenticated) {
-      _state = AuthState.loading;
-      notifyListeners();
-      try {
-        _userProfile = await _authRepo.getProfile();
+    try {
+      final user = await authRepo.getCurrentUser();
+      if (user != null) {
+        _profile = user;
         _state = AuthState.authenticated;
-      } catch (e) {
-        _state = AuthState.initial;
+        setState(ViewState.success);
+        notifyListeners();
       }
+    } catch (_) {
+      _state = AuthState.initial;
+      setState(ViewState.initial);
       notifyListeners();
     }
   }
 
   Future<bool> requestOtp(String phone) async {
     _state = AuthState.loading;
-    _errorMessage = null;
+    setState(ViewState.loading);
     _phoneNumber = phone;
     notifyListeners();
 
     try {
-      await _authRepo.requestOtp(phone);
+      await authRepo.requestOtp(phone);
       _state = AuthState.otpSent;
+      setState(ViewState.success);
       notifyListeners();
       return true;
     } catch (e) {
       _state = AuthState.error;
-      _errorMessage = e.toString();
+      setState(ViewState.error, errorMessage: e.toString());
       notifyListeners();
       return false;
     }
   }
 
-  Future<bool> verifyOtp(String otp, {String? firstName, String? lastName}) async {
+  Future<bool> verifyOtp(
+    String otp, {
+    String? firstName,
+    String? lastName,
+  }) async {
     if (_phoneNumber == null) return false;
     _state = AuthState.loading;
-    _errorMessage = null;
+    setState(ViewState.loading);
     notifyListeners();
 
     try {
-      _userProfile = await _authRepo.verifyOtpAndLogin(
-        phone: _phoneNumber!,
+      _profile = await authRepo.verifyOtp(
+        phoneNumber: _phoneNumber!,
         otp: otp,
-        firstName: firstName,
-        lastName: lastName,
       );
       _state = AuthState.authenticated;
+      setState(ViewState.success);
       notifyListeners();
       return true;
     } catch (e) {
       _state = AuthState.error;
-      _errorMessage = e.toString();
+      setState(ViewState.error, errorMessage: e.toString());
       notifyListeners();
       return false;
     }
   }
 
+  // Backward compatibility method
+  Future<bool> verifyOtpAndLogin({
+    required String phone,
+    required String otp,
+    String? firstName,
+    String? lastName,
+  }) async {
+    _phoneNumber = phone;
+    return verifyOtp(otp, firstName: firstName, lastName: lastName);
+  }
+
   Future<void> logout() async {
-    await _authRepo.logout();
-    _userProfile = null;
+    await authRepo.logout();
+    _profile = null;
     _phoneNumber = null;
     _state = AuthState.initial;
+    setState(ViewState.initial);
     notifyListeners();
   }
 }

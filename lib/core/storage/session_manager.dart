@@ -59,4 +59,8 @@ class SessionManager {
   Future<void> clear() async {
     await _prefs.clear();
   }
+
+  Future<void> clearSession() async {
+    await clear();
+  }
 }
