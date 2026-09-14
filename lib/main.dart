@@ -11,8 +11,7 @@ import 'data/repositories/ride_repository.dart';
 import 'data/repositories/rider_repository.dart';
 import 'data/repositories/support_repository.dart';
 import 'data/services/notification_client_service.dart';
-import 'presentation/screens/auth_screen.dart';
-import 'presentation/screens/home_map_screen.dart';
+
 import 'presentation/viewmodels/active_ride_viewmodel.dart';
 import 'presentation/viewmodels/auth_viewmodel.dart';
 import 'presentation/viewmodels/emergency_contact_viewmodel.dart';
@@ -23,6 +22,8 @@ import 'presentation/viewmodels/ride_viewmodel.dart';
 import 'presentation/viewmodels/rider_profile_viewmodel.dart';
 import 'presentation/viewmodels/support_viewmodel.dart';
 import 'presentation/viewmodels/trip_history_viewmodel.dart';
+
+import 'presentation/routes/app_routes.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -84,14 +85,8 @@ class CabAppRider extends StatelessWidget {
       title: 'CabApp Rider',
       theme: AppTheme.lightTheme,
       debugShowCheckedModeBanner: false,
-      home: Consumer<AuthViewModel>(
-        builder: (context, authVm, _) {
-          if (authVm.isAuthenticated) {
-            return const HomeMapScreen();
-          }
-          return const AuthScreen();
-        },
-      ),
+      initialRoute: AppRoutes.splash,
+      onGenerateRoute: AppRoutes.onGenerateRoute,
     );
   }
 }
