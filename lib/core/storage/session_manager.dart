@@ -56,6 +56,22 @@ class SessionManager {
     await _prefs.setString(_keyFcmToken, token);
   }
 
+  static const String _keyActiveRideId = 'active_ride_id';
+  static const String _keyActiveRideStatus = 'active_ride_status';
+
+  String? get activeRideId => _prefs.getString(_keyActiveRideId);
+  String? get activeRideStatus => _prefs.getString(_keyActiveRideStatus);
+
+  Future<void> saveActiveRide(String rideId, String status) async {
+    await _prefs.setString(_keyActiveRideId, rideId);
+    await _prefs.setString(_keyActiveRideStatus, status);
+  }
+
+  Future<void> clearActiveRide() async {
+    await _prefs.remove(_keyActiveRideId);
+    await _prefs.remove(_keyActiveRideStatus);
+  }
+
   Future<void> clear() async {
     await _prefs.clear();
   }

@@ -28,4 +28,11 @@ abstract class IRideRepository {
   Future<ActiveRide> syncRealtimeState(String rideId);
   Future<ActiveRide> cancelRide(String rideId, {required String reason});
   Future<List<TripHistoryItem>> getTripHistory();
+  Future<List<Map<String, dynamic>>> getAvailableDrivers({
+    String serviceArea,
+    String? vehicleCategory,
+    double? latitude,
+    double? longitude,
+    double? radiusKm,
+  });
 }

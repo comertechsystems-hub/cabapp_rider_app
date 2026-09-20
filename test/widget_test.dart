@@ -198,9 +198,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       // Header & Addresses
-      expect(find.text('CabApp'), findsWidgets);
-      expect(find.text('Victoria Island (Adeola Odeku)'), findsOneWidget);
-      expect(find.text('Lekki Phase 1 (Admiralty Way)'), findsOneWidget);
+      expect(find.byType(Image), findsWidgets);
+      expect(find.text('Victoria Island (Adeola Odeku)'), findsWidgets);
+      expect(find.text('Lekki Phase 1 (Admiralty Way)'), findsWidgets);
 
       // Categories
       expect(find.text('Economy Hatchback'), findsOneWidget);

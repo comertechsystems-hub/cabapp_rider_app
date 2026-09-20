@@ -7,6 +7,7 @@ import '../viewmodels/payment_status_viewmodel.dart';
 import '../viewmodels/rating_viewmodel.dart';
 import '../viewmodels/ride_viewmodel.dart';
 import '../viewmodels/support_viewmodel.dart';
+import '../widgets/interactive_live_map.dart';
 import 'payment_status_dialog.dart';
 import 'rating_dialog.dart';
 
@@ -74,10 +75,21 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: (ride.isCancelled || ride.isCompleted)
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () {
+                  activeVm.reset();
+                  legacyRideVm.reset();
+                },
+              )
+            : null,
         title: Text(
           ride.isCompleted
               ? 'Trip Completed'
-              : (ride.isSearching ? 'Searching for Driver' : 'Ride ${ride.id}'),
+              : (ride.isCancelled
+                  ? 'Trip Cancelled'
+                  : (ride.isSearching ? 'Searching for Driver' : 'Ride ${ride.id}')),
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         actions: [
@@ -145,60 +157,31 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
           ),
           // Live Map Area
           Expanded(
-            child: Container(
-              color: const Color(0xFFE5E9E0),
-              child: Stack(
-                children: [
-                  Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(22),
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
-                          ),
-                          child: Icon(
-                            ride.isCompleted
-                                ? Icons.done_all
-                                : (ride.isInProgress
-                                    ? Icons.directions_car
-                                    : (ride.isSearching ? Icons.radar : Icons.local_taxi)),
-                            size: 48,
-                            color: AppColors.navy,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          ride.status.replaceAll('_', ' '),
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.navy),
-                        ),
-                        if (activeVm.driverLocation != null) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            'Driver GPS: ${activeVm.driverLocation!.latitude.toStringAsFixed(4)}, ${activeVm.driverLocation!.longitude.toStringAsFixed(4)}',
-                            style: const TextStyle(fontSize: 11, color: AppColors.inkSoft),
-                          ),
-                        ],
-                      ],
+            child: Stack(
+              children: [
+                InteractiveLiveMap(
+                  pickupLat: ride.pickupLat,
+                  pickupLng: ride.pickupLng,
+                  pickupAddress: ride.pickupAddress,
+                  destinationLat: ride.destinationLat,
+                  destinationLng: ride.destinationLng,
+                  destinationAddress: ride.destinationAddress,
+                  driverLat: activeVm.driverLocation?.latitude,
+                  driverLng: activeVm.driverLocation?.longitude,
+                ),
+                // Emergency SOS Button (visible during active trip)
+                if (ride.isInProgress)
+                  Positioned(
+                    top: 16,
+                    right: 16,
+                    child: FloatingActionButton.extended(
+                      backgroundColor: AppColors.coral,
+                      icon: const Icon(Icons.warning, color: Colors.white),
+                      label: const Text('EMERGENCY SOS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                      onPressed: () => _triggerSos(context, ride.id),
                     ),
                   ),
-                  // Emergency SOS Button (visible during active trip)
-                  if (ride.isInProgress)
-                    Positioned(
-                      top: 16,
-                      right: 16,
-                      child: FloatingActionButton.extended(
-                        backgroundColor: AppColors.coral,
-                        icon: const Icon(Icons.warning, color: Colors.white),
-                        label: const Text('EMERGENCY SOS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-                        onPressed: () => _triggerSos(context, ride.id),
-                      ),
-                    ),
-                ],
-              ),
+              ],
             ),
           ),
           // Bottom Card
@@ -378,6 +361,25 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
                       child: const Text('Confirm Payment Made'),
                     ),
                   ),
+                ] else if (ride.isCancelled) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        activeVm.reset();
+                        legacyRideVm.reset();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.navy,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: const Text(
+                        'Back to Home / Book Again',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                    ),
+                  ),
                 ],
               ],
             ),
@@ -443,6 +445,8 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
               Navigator.pop(ctx);
               await activeVm.cancelRide('Cancelled by rider');
               await legacyVm.cancelRide('Cancelled by rider');
+              activeVm.reset();
+              legacyVm.reset();
             },
             child: const Text('Confirm Cancel'),
           ),

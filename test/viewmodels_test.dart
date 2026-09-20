@@ -238,6 +238,15 @@ class MockRideRepo implements IRideRepository {
       ),
     ];
   }
+
+  @override
+  Future<List<Map<String, dynamic>>> getAvailableDrivers({
+    String serviceArea = 'Lagos Metropolitan',
+    String? vehicleCategory,
+    double? latitude,
+    double? longitude,
+    double? radiusKm,
+  }) async => [];
 }
 
 class MockPaymentRepo implements IPaymentRepository {

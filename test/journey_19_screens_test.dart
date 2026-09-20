@@ -114,8 +114,7 @@ void main() {
       await tester.pumpWidget(buildApp(const SplashScreen()));
       await tester.pump();
 
-      expect(find.text('CabApp'), findsOneWidget);
-      expect(find.text('Driver-First Mobility'), findsOneWidget);
+      expect(find.byType(Image), findsOneWidget);
       expect(find.text('A product by LaunchGird Limited'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
@@ -170,7 +169,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('CabApp'), findsWidgets);
+      expect(find.byType(Image), findsWidgets);
       expect(find.textContaining('100% Direct P2P Settlement'), findsOneWidget);
     });
 

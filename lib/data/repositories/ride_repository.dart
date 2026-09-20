@@ -27,6 +27,8 @@ class RideRepository implements IRideRepository {
     final res = await apiClient.post(
       ApiEndpoints.getFareEstimatesAll,
       body: {
+        'pickup': {'lat': pickupLat, 'lng': pickupLng},
+        'destination': {'lat': dLat, 'lng': dLng},
         'pickup_lat': pickupLat,
         'pickup_lng': pickupLng,
         'destination_lat': dLat,
@@ -35,7 +37,12 @@ class RideRepository implements IRideRepository {
       },
     );
 
-    final List<dynamic> list = res is List ? res : (res['data'] ?? []);
+    final dynamic rawList = res is List
+        ? res
+        : (res is Map
+            ? (res['estimates'] ?? res['data'] ?? [])
+            : []);
+    final List<dynamic> list = rawList is List ? rawList : [];
     return list.map((item) => FareEstimateModel.fromJson(item)).toList();
   }
 
@@ -137,5 +144,44 @@ class RideRepository implements IRideRepository {
     );
     final data = res['data'] ?? res;
     return RideModel.fromJson(data);
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getAvailableDrivers({
+    String serviceArea = 'Lagos Metropolitan',
+    String? vehicleCategory,
+    double? latitude,
+    double? longitude,
+    double? radiusKm,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{
+        'service_area': serviceArea,
+      };
+      if (vehicleCategory != null) queryParams['vehicle_category'] = vehicleCategory;
+      if (latitude != null) queryParams['latitude'] = latitude;
+      if (longitude != null) queryParams['longitude'] = longitude;
+      if (radiusKm != null) queryParams['radius_km'] = radiusKm;
+
+      final res = await apiClient.get(
+        ApiEndpoints.getAvailableDrivers,
+        queryParams: queryParams,
+      );
+
+      final msg = res is Map<String, dynamic> && res.containsKey('message')
+          ? res['message']
+          : res;
+
+      final drivers = msg is Map<String, dynamic> && msg.containsKey('drivers')
+          ? msg['drivers']
+          : (msg is List ? msg : []);
+
+      if (drivers is List) {
+        return drivers.map((d) => Map<String, dynamic>.from(d as Map)).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
   }
 }

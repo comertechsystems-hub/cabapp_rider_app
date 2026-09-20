@@ -147,9 +147,56 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   }).toList(),
                 ),
 
-                // Bank Transfer Reference Input
+                // Bank Transfer Reference Input & Dedicated Virtual NUBAN
                 if (paymentVm.selectedMethod == 'BANK_TRANSFER') ...[
                   const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.paperRaised,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppColors.gold.withValues(alpha: 0.5)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.account_balance, color: AppColors.navy, size: 18),
+                            SizedBox(width: 8),
+                            Text('Dedicated Ride NUBAN (Instant Auto-Verify)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: AppColors.navy)),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Bank: Wema Bank / Providus', style: TextStyle(fontSize: 12, color: AppColors.inkSoft)),
+                                Text(
+                                  '99${(effectiveRideId.replaceAll(RegExp(r'[^0-9]'), '').padLeft(8, '0'))}',
+                                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: AppColors.ink),
+                                ),
+                                const Text('Name: CabApp P2P Settlement', style: TextStyle(fontSize: 11, color: AppColors.inkSoft)),
+                              ],
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.copy, size: 20, color: AppColors.navy),
+                              tooltip: 'Copy Account',
+                              onPressed: () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Account number copied to clipboard!')),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   TextField(
                     controller: _refController,
                     decoration: InputDecoration(

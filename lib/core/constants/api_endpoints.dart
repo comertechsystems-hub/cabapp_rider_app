@@ -1,5 +1,8 @@
 class ApiEndpoints {
-  static const String defaultBaseUrl = 'http://127.0.0.1:8000';
+  static const String defaultBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'https://cabapp.com.ng',
+  );
 
   // Auth Endpoints
   static const String requestOtp = '/api/method/mobility.api.auth.request_otp';
@@ -14,6 +17,7 @@ class ApiEndpoints {
   static const String getFareEstimatesAll = '/api/method/mobility.api.pricing.get_fare_estimates_all_categories';
 
   // Ride Lifecycle
+  static const String getAvailableDrivers = '/api/method/mobility.api.driver.get_available_drivers';
   static const String requestRide = '/api/method/mobility.api.ride.request_ride';
   static const String searchDrivers = '/api/method/mobility.api.ride.search_drivers';
   static const String getRide = '/api/method/mobility.api.ride.get_ride';

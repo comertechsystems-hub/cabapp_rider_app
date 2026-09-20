@@ -44,8 +44,13 @@ class AuthRepository implements IAuthRepository {
 
     final apiKey = data['api_key'] ?? '';
     final apiSecret = data['api_secret'] ?? '';
-    final userEmail = data['user'] ?? '';
-    final riderId = data['domain_profile'] ?? data['rider_id'] ?? data['name'] ?? '';
+    final String userEmail = data['user'] is Map
+        ? (data['user']['email']?.toString() ?? '')
+        : (data['user']?.toString() ?? '');
+    final Map<String, dynamic> profileData = data['profile'] is Map
+        ? Map<String, dynamic>.from(data['profile'] as Map)
+        : (data is Map<String, dynamic> ? data : <String, dynamic>{});
+    final riderId = profileData['name'] ?? profileData['id'] ?? data['domain_profile'] ?? data['rider_id'] ?? '';
 
     await sessionManager.saveAuthCredentials(
       apiKey: apiKey,
@@ -53,10 +58,10 @@ class AuthRepository implements IAuthRepository {
       userEmail: userEmail,
       riderId: riderId,
       phone: phoneNumber,
-      fullName: '${firstName ?? ''} ${lastName ?? ''}'.trim(),
+      fullName: '${profileData['first_name'] ?? firstName ?? ''} ${profileData['last_name'] ?? lastName ?? ''}'.trim(),
     );
 
-    return RiderProfileModel.fromJson(data);
+    return RiderProfileModel.fromJson(profileData);
   }
 
   // Backward compatibility alias

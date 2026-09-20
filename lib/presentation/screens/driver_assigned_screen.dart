@@ -21,7 +21,16 @@ class DriverAssignedScreen extends StatelessWidget {
       backgroundColor: AppColors.paper,
       appBar: AppBar(
         title: const Text('Driver Assigned', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => _confirmCancel(context, activeVm, legacyVm),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => _confirmCancel(context, activeVm, legacyVm),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.coral, fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -272,6 +281,32 @@ class DriverAssignedScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _confirmCancel(BuildContext context, ActiveRideViewModel activeVm, RideViewModel legacyVm) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cancel Ride?'),
+        content: const Text('Are you sure you want to cancel this ride?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Keep Ride')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.coral),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await activeVm.cancelRide('Cancelled by rider');
+              activeVm.reset();
+              legacyVm.reset();
+              if (context.mounted) {
+                Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
+              }
+            },
+            child: const Text('Cancel Ride', style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }

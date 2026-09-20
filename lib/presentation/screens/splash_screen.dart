@@ -75,43 +75,21 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   const Spacer(),
                   // Brand Icon Container
                   Container(
-                    width: 90,
-                    height: 90,
+                    width: 104,
+                    height: 104,
                     decoration: BoxDecoration(
-                      color: AppColors.gold,
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(26),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.gold.withValues(alpha: 0.3),
-                          blurRadius: 20,
+                          color: AppColors.gold.withValues(alpha: 0.35),
+                          blurRadius: 24,
                           offset: const Offset(0, 8),
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.local_taxi,
-                      color: AppColors.navy,
-                      size: 52,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'CabApp',
-                    style: TextStyle(
-                      fontSize: 34,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: -0.5,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Driver-First Mobility',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white70,
-                      letterSpacing: 0.5,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(26),
+                      child: Image.asset('assets/images/icon.png', fit: BoxFit.cover),
                     ),
                   ),
                   const Spacer(),

@@ -50,36 +50,9 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const SizedBox(height: 24),
                 // Brand Header
-                Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: AppColors.navy,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.local_taxi, color: Colors.white, size: 24),
-                    ),
-                    const SizedBox(width: 12),
-                    const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'CabApp',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.ink,
-                          ),
-                        ),
-                        Text(
-                          'Driver-First Mobility',
-                          style: TextStyle(fontSize: 12, color: AppColors.inkSoft),
-                        ),
-                      ],
-                    ),
-                  ],
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.asset('assets/images/icon.png', width: 44, height: 44, fit: BoxFit.cover),
                 ),
                 const SizedBox(height: 44),
                 const Text(

@@ -17,19 +17,24 @@ class RiderProfileModel extends RiderProfile {
   });
 
   factory RiderProfileModel.fromJson(Map<String, dynamic> json) {
+    final rawUser = json['user'];
+    final userVal = rawUser is Map
+        ? (rawUser['email']?.toString() ?? '')
+        : (rawUser?.toString() ?? (json['email']?.toString() ?? ''));
+
     return RiderProfileModel(
-      id: json['name'] ?? json['id'] ?? json['rider_id'] ?? '',
-      user: json['user'] ?? json['email'] ?? '',
-      phoneNumber: json['phone_number'] ?? json['phone'] ?? '',
-      firstName: json['first_name'],
-      lastName: json['last_name'],
-      email: json['email'],
+      id: (json['name'] ?? json['id'] ?? json['rider_id'] ?? '').toString(),
+      user: userVal,
+      phoneNumber: (json['phone_number'] ?? json['phone'] ?? '').toString(),
+      firstName: json['first_name']?.toString(),
+      lastName: json['last_name']?.toString(),
+      email: json['email']?.toString() ?? (rawUser is Map ? rawUser['email']?.toString() : null),
       rating: (json['rating'] as num?)?.toDouble() ?? 5.0,
       totalTrips: (json['total_trips'] as num?)?.toInt() ?? (json['total_rides'] as num?)?.toInt() ?? 0,
-      status: json['status'] ?? 'ACTIVE',
-      emergencyContactName: json['emergency_contact_name'],
-      emergencyContactPhone: json['emergency_contact_phone'],
-      suspensionReason: json['suspension_reason'],
+      status: (json['status'] ?? 'ACTIVE').toString(),
+      emergencyContactName: json['emergency_contact_name']?.toString(),
+      emergencyContactPhone: json['emergency_contact_phone']?.toString(),
+      suspensionReason: json['suspension_reason']?.toString(),
     );
   }
 

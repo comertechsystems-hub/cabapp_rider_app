@@ -77,7 +77,9 @@ class _SearchingScreenState extends State<SearchingScreen> with SingleTickerProv
             onPressed: () async {
               Navigator.pop(ctx);
               await activeVm.cancelRide('Cancelled by rider');
+              activeVm.reset();
               if (context.mounted) {
+                context.read<RideViewModel>().reset();
                 Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
               }
             },
@@ -100,7 +102,10 @@ class _SearchingScreenState extends State<SearchingScreen> with SingleTickerProv
       backgroundColor: AppColors.paper,
       appBar: AppBar(
         title: const Text('Searching for Driver', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => _showCancelDialog(context, activeVm),
+        ),
         actions: [
           TextButton(
             onPressed: () => _showCancelDialog(context, activeVm),
@@ -109,160 +114,133 @@ class _SearchingScreenState extends State<SearchingScreen> with SingleTickerProv
         ],
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            const Spacer(),
-            // Radar pulse animation
-            Center(
-              child: AnimatedBuilder(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 30.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Spacer(),
+              // Double Ring Matching Graphic from r-match
+              AnimatedBuilder(
                 animation: _pulseAnimation,
                 builder: (context, child) {
                   return Stack(
                     alignment: Alignment.center,
                     children: [
+                      // Outer gold ring pulsing
                       Container(
-                        width: 160 * _pulseAnimation.value,
-                        height: 160 * _pulseAnimation.value,
+                        width: 96 * _pulseAnimation.value,
+                        height: 96 * _pulseAnimation.value,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: AppColors.navy.withValues(alpha: 0.08),
+                          border: Border.all(
+                            color: AppColors.gold.withValues(alpha: 0.5),
+                            width: 3,
+                          ),
                         ),
                       ),
+                      // Inner navy ring
                       Container(
-                        width: 120 * _pulseAnimation.value,
-                        height: 120 * _pulseAnimation.value,
+                        width: 96,
+                        height: 96,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: AppColors.navy.withValues(alpha: 0.15),
+                          border: Border.all(
+                            color: AppColors.navy,
+                            width: 3,
+                          ),
                         ),
-                      ),
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
+                        child: const Icon(
+                          Icons.directions_car,
                           color: AppColors.navy,
-                          boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 4))],
+                          size: 36,
                         ),
-                        child: const Icon(Icons.radar, color: AppColors.gold, size: 42),
                       ),
                     ],
                   );
                 },
               ),
-            ),
-            const SizedBox(height: 32),
-            const Text(
-              'Connecting with Drivers...',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: AppColors.ink,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 36.0),
-              child: Text(
-                'Searching for the nearest verified driver in your area. This usually takes under 60 seconds.',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14, color: AppColors.inkSoft, height: 1.4),
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Elapsed seconds indicator
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.navySoft,
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(
-                    width: 12,
-                    height: 12,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.navy),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${activeVm.searchSecondsElapsed}s elapsed',
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.navy),
-                  ),
-                ],
-              ),
-            ),
-            const Spacer(),
+              const SizedBox(height: 24),
 
-            // Trip summary card
-            if (ride != null)
+              const Text(
+                'Connecting with Drivers...',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.ink,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20.0),
+                child: Text(
+                  'Matching you with a verified driver nearby. This usually takes under a minute.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13, color: AppColors.inkSoft, height: 1.4),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Elapsed time pill
               Container(
-                margin: const EdgeInsets.all(16),
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: const Color(0xFFEAECF3),
+                  borderRadius: BorderRadius.circular(100),
+                ),
+                child: Text(
+                  '● ${activeVm.searchSecondsElapsed}s elapsed',
+                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: AppColors.navy),
+                ),
+              ),
+              const Spacer(),
+
+              // Trip Summary Card from r-match
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: AppColors.paperRaised,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: AppColors.line),
-                  boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
                 ),
-                child: Column(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.my_location, color: AppColors.navy, size: 16),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            ride.pickupAddress,
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+                    Expanded(
+                      child: Text(
+                        '${ride?.vehicleCategory ?? "Standard"} · ${ride?.pickupAddress.split(",").first ?? "Lekki"} → ${ride?.destinationAddress.split(",").first ?? "Ikeja"}',
+                        style: const TextStyle(fontSize: 12.5, color: AppColors.inkSoft, fontWeight: FontWeight.w500),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        const Icon(Icons.location_on, color: AppColors.coral, size: 16),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            ride.destinationAddress,
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.inkSoft),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Text(
-                          '₦${ride.displayFare.toStringAsFixed(2)}',
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.navy),
-                        ),
-                      ],
+                    const SizedBox(width: 8),
+                    Text(
+                      '₦${(ride?.totalFare ?? 5600).toStringAsFixed(0)}',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5, color: AppColors.ink),
                     ),
                   ],
                 ),
               ),
-
-            // Cancel button
-            Padding(
-              padding: const EdgeInsets.only(left: 16, right: 16, bottom: 20),
-              child: SizedBox(
+              const SizedBox(height: 14),
+              SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: 48,
                 child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.coral,
-                    side: const BorderSide(color: AppColors.coral),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
                   onPressed: () => _showCancelDialog(context, activeVm),
-                  child: const Text('Cancel Request', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.line, width: 1.5),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
+                  ),
+                  child: const Text(
+                    'Cancel Request',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.ink),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

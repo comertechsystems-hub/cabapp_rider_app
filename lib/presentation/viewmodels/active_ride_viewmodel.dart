@@ -30,7 +30,7 @@ class ActiveRideViewModel extends ChangeNotifier with ViewStateMixin {
   DriverLocationEvent? get driverLocation => _driverLocation;
   int get searchSecondsElapsed => _searchSecondsElapsed;
 
-  bool get hasActiveRide => _currentRide != null;
+  bool get hasActiveRide => _currentRide != null && !_currentRide!.isCancelled;
   bool get isSearching => _currentRide?.isSearching ?? false;
   bool get isDriverAssigned => _currentRide?.isDriverAssigned ?? false;
   bool get isDriverArriving =>
@@ -63,8 +63,10 @@ class ActiveRideViewModel extends ChangeNotifier with ViewStateMixin {
     _currentRide = ride;
     realtimeService?.listenToRide(ride.id);
 
-    if (ride.isSearching) {
-      _startSearchTimer();
+    if (ride.isSearching || ride.isDriverAssigned) {
+      if (_searchTimer == null) {
+        _startSearchTimer();
+      }
     } else {
       _stopSearchTimer();
     }
@@ -78,6 +80,9 @@ class ActiveRideViewModel extends ChangeNotifier with ViewStateMixin {
     _searchSecondsElapsed = 0;
     _searchTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       _searchSecondsElapsed++;
+      if (_searchSecondsElapsed % 2 == 0) {
+        refreshActiveRide();
+      }
       notifyListeners();
     });
   }
@@ -91,7 +96,11 @@ class ActiveRideViewModel extends ChangeNotifier with ViewStateMixin {
     if (_currentRide == null) return;
     try {
       final updated = await rideRepo.syncRealtimeState(_currentRide!.id);
-      setActiveRide(updated);
+      _currentRide = updated;
+      if (!updated.isSearching && !updated.isDriverAssigned) {
+        _stopSearchTimer();
+      }
+      notifyListeners();
     } catch (_) {}
   }
 

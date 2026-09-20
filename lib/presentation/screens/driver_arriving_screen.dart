@@ -6,6 +6,7 @@ import '../../core/constants/app_colors.dart';
 import '../routes/app_routes.dart';
 import '../viewmodels/active_ride_viewmodel.dart';
 import '../viewmodels/ride_viewmodel.dart';
+import '../widgets/interactive_live_map.dart';
 
 /// 13. Driver Arriving Screen
 class DriverArrivingScreen extends StatefulWidget {
@@ -67,7 +68,16 @@ class _DriverArrivingScreenState extends State<DriverArrivingScreen> {
           hasArrived ? 'Driver Has Arrived!' : 'Driver En Route',
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
-        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => _confirmCancel(context, activeVm, legacyVm),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => _confirmCancel(context, activeVm, legacyVm),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.coral, fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Column(
@@ -97,48 +107,17 @@ class _DriverArrivingScreenState extends State<DriverArrivingScreen> {
               ),
             ),
 
-            // Live Map Mockup
+            // Live Map
             Expanded(
-              child: Container(
-                color: const Color(0xFFE5E9E0),
-                child: Stack(
-                  children: [
-                    Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, 4)),
-                              ],
-                            ),
-                            child: Icon(
-                              hasArrived ? Icons.pin_drop : Icons.navigation,
-                              size: 44,
-                              color: hasArrived ? AppColors.green : AppColors.navy,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            hasArrived ? 'Driver Waiting Outside' : 'Approaching Pickup (~3 mins)',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.navy),
-                          ),
-                          if (activeVm.driverLocation != null) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              'GPS: ${activeVm.driverLocation!.latitude.toStringAsFixed(4)}, ${activeVm.driverLocation!.longitude.toStringAsFixed(4)}',
-                              style: const TextStyle(fontSize: 11, color: AppColors.inkSoft),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+              child: InteractiveLiveMap(
+                pickupLat: ride?.pickupLat ?? 6.4281,
+                pickupLng: ride?.pickupLng ?? 3.4219,
+                pickupAddress: ride?.pickupAddress ?? 'Pickup',
+                destinationLat: ride?.destinationLat ?? 6.4474,
+                destinationLng: ride?.destinationLng ?? 3.4723,
+                destinationAddress: ride?.destinationAddress ?? 'Destination',
+                driverLat: activeVm.driverLocation?.latitude,
+                driverLng: activeVm.driverLocation?.longitude,
               ),
             ),
 
@@ -296,6 +275,32 @@ class _DriverArrivingScreenState extends State<DriverArrivingScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _confirmCancel(BuildContext context, ActiveRideViewModel activeVm, RideViewModel legacyVm) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cancel Ride?'),
+        content: const Text('Are you sure you want to cancel this ride request?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Keep Ride')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.coral),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await activeVm.cancelRide('Cancelled by rider');
+              activeVm.reset();
+              legacyVm.reset();
+              if (context.mounted) {
+                Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
+              }
+            },
+            child: const Text('Cancel Ride', style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }
