@@ -165,7 +165,8 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> {
                     final tileLeft = tx * 256.0 - centerPx + width / 2.0;
                     final tileTop = ty * 256.0 - centerPy + height / 2.0;
 
-                    final tileUrl = 'https://a.basemaps.cartocdn.com/rastertiles/voyager/$currentZoom/$wrappedTx/$ty@2x.png';
+                    final tileUrl = 'https://tile.openstreetmap.org/$currentZoom/$wrappedTx/$ty.png';
+                    final fallbackTileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/$currentZoom/$ty/$wrappedTx.jpg';
 
                     tiles.add(
                       Positioned(
@@ -175,11 +176,16 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> {
                         height: 256,
                         child: Image.network(
                           tileUrl,
+                          headers: const {'User-Agent': 'CabAppMobility/1.0 (https://cabapp.com.ng)'},
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE8ECE9),
-                              border: Border.all(color: Colors.black12, width: 0.5),
+                          errorBuilder: (_, __, ___) => Image.network(
+                            fallbackTileUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE8ECE9),
+                                border: Border.all(color: Colors.black12, width: 0.5),
+                              ),
                             ),
                           ),
                         ),
@@ -310,7 +316,7 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> {
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: const Text(
-                    '© OpenStreetMap, CartoDB',
+                    '© OpenStreetMap, Esri',
                     style: TextStyle(fontSize: 8.5, color: Colors.black54),
                   ),
                 ),

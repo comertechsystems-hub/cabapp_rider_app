@@ -89,7 +89,7 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
               ? 'Trip Completed'
               : (ride.isCancelled
                   ? 'Trip Cancelled'
-                  : (ride.isSearching ? 'Searching for Driver' : 'Ride ${ride.id}')),
+                  : ((ride.isSearching || ride.isDriverAssigned) ? 'Searching for Driver' : 'Ride ${ride.id}')),
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         actions: [
@@ -140,7 +140,7 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
                     ],
                   ),
                 ),
-                if (ride.isSearching)
+                if (ride.isSearching || ride.isDriverAssigned)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
@@ -199,7 +199,8 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 4-Digit Start OTP PIN Box (Crucial for Rider & Driver)
-                if (ride.startOtp != null && !ride.isInProgress && !ride.isCompleted) ...[
+                // Only show Start PIN when driver has accepted and is on the way / arrived
+                if (ride.startOtp != null && !ride.isSearching && !ride.isDriverAssigned && !ride.isInProgress && !ride.isCompleted) ...[
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
@@ -237,8 +238,41 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
                   ),
                   const SizedBox(height: 16),
                 ],
-                // Assigned Driver Card
-                if (driver != null || ride.hasDriver) ...[
+                // Connecting radar while searching or awaiting driver accept
+                if (ride.isSearching || ride.isDriverAssigned) ...[
+                  Row(
+                    children: [
+                      const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2.5, color: AppColors.navy),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              ride.isDriverAssigned
+                                  ? 'Ride offered to nearby driver...'
+                                  : 'Connecting with closest driver...',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.ink),
+                            ),
+                            Text(
+                              ride.isDriverAssigned
+                                  ? 'Awaiting driver mobile confirmation'
+                                  : 'Broadcasting within service area',
+                              style: const TextStyle(fontSize: 12, color: AppColors.inkSoft),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                // Assigned Driver Card (Displayed once driver ACCEPTS)
+                if (!ride.isSearching && !ride.isDriverAssigned && (driver != null || ride.hasDriver)) ...[
                   Row(
                     children: [
                       Container(
@@ -394,7 +428,7 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
       case 'SEARCHING':
         return 'Searching for Drivers...';
       case 'DRIVER_ASSIGNED':
-        return 'Driver Found!';
+        return 'Contacting Nearby Driver...';
       case 'DRIVER_ACCEPTED':
       case 'DRIVER_EN_ROUTE':
         return 'Driver En Route to Pickup';
@@ -419,6 +453,11 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
     switch (status) {
       case 'SEARCHING':
         return 'Broadcasting to nearby verified drivers';
+      case 'DRIVER_ASSIGNED':
+        return 'Ride offer sent, awaiting driver confirmation';
+      case 'DRIVER_ACCEPTED':
+      case 'DRIVER_EN_ROUTE':
+        return 'Driver is heading to your pickup location';
       case 'DRIVER_ARRIVED':
         return 'Please meet driver with your 4-digit PIN';
       case 'TRIP_STARTED':
