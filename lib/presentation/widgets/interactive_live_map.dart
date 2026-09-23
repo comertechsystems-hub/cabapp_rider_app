@@ -13,6 +13,8 @@ class InteractiveLiveMap extends StatefulWidget {
   final String destinationAddress;
   final double? driverLat;
   final double? driverLng;
+  final double? myLocationLat;
+  final double? myLocationLng;
   final List<Map<String, dynamic>>? nearbyDrivers;
 
   const InteractiveLiveMap({
@@ -25,6 +27,8 @@ class InteractiveLiveMap extends StatefulWidget {
     required this.destinationAddress,
     this.driverLat,
     this.driverLng,
+    this.myLocationLat,
+    this.myLocationLng,
     this.nearbyDrivers,
   });
 
@@ -226,6 +230,33 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> {
                   title: widget.destinationAddress.split(',').first,
                 ),
               ),
+
+              // 5a. Real Device GPS My Location Marker
+              if (widget.myLocationLat != null && widget.myLocationLng != null) ...[
+                Positioned(
+                  left: (_lngToPixelX(widget.myLocationLng!, currentZoom.toDouble()) - centerPx + width / 2.0) - 14,
+                  top: (_latToPixelY(widget.myLocationLat!, currentZoom.toDouble()) - centerPy + height / 2.0) - 14,
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withValues(alpha: 0.25),
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Container(
+                      width: 14,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        color: Colors.blueAccent,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2.5),
+                        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
 
               // 5b. Live Driver Car Marker
               if (widget.driverLat != null && widget.driverLng != null)

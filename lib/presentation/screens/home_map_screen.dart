@@ -16,6 +16,7 @@ import 'rider_profile_screen.dart';
 import 'support_screen.dart';
 import 'trip_history_screen.dart';
 import '../widgets/interactive_live_map.dart';
+import '../../core/services/device_location_service.dart';
 
 class HomeMapScreen extends StatefulWidget {
   const HomeMapScreen({super.key});
@@ -36,6 +37,9 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
 
   List<Map<String, dynamic>> _nearbyDrivers = [];
   Timer? _nearbyTimer;
+  double _myLat = 6.4281;
+  double _myLng = 3.4219;
+  bool _hasDeviceLocation = false;
 
   @override
   void initState() {
@@ -53,6 +57,26 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
       legacyVm.fetchFareEstimates();
 
       _fetchNearbyDrivers();
+
+      // Acquire actual device GPS coordinates asynchronously without blocking initial render
+      DeviceLocationService.getCurrentPosition().then((pos) {
+        if (pos != null && mounted) {
+          setState(() {
+            _myLat = pos.latitude;
+            _myLng = pos.longitude;
+            _hasDeviceLocation = true;
+          });
+          bookingVm.setPickup('My Current Location', pos.latitude, pos.longitude);
+          bookingVm.setDestination('Selected Destination', pos.latitude + 0.015, pos.longitude + 0.020);
+          bookingVm.fetchFareEstimates();
+
+          legacyVm.setPickup('My Current Location', pos.latitude, pos.longitude);
+          legacyVm.setDestination('Selected Destination', pos.latitude + 0.015, pos.longitude + 0.020);
+          legacyVm.fetchFareEstimates();
+
+          _fetchNearbyDrivers();
+        }
+      }).catchError((_) {});
     });
     _nearbyTimer = Timer.periodic(const Duration(seconds: 4), (_) => _fetchNearbyDrivers());
   }
@@ -62,8 +86,8 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
       final repo = context.read<IRideRepository>();
       final drivers = await repo.getAvailableDrivers(
         serviceArea: 'Lagos Metropolitan',
-        latitude: 6.4281,
-        longitude: 3.4219,
+        latitude: _myLat,
+        longitude: _myLng,
       );
       if (mounted) {
         setState(() {
@@ -179,12 +203,14 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
               child: Stack(
                 children: [
                   InteractiveLiveMap(
-                    pickupLat: bookingVm.pickupLat ?? legacyVm.pickupLat ?? 6.4281,
-                    pickupLng: bookingVm.pickupLng ?? legacyVm.pickupLng ?? 3.4219,
+                    pickupLat: bookingVm.pickupLat ?? legacyVm.pickupLat ?? _myLat,
+                    pickupLng: bookingVm.pickupLng ?? legacyVm.pickupLng ?? _myLng,
                     pickupAddress: bookingVm.pickupAddress ?? legacyVm.pickupAddress ?? 'Victoria Island (Adeola Odeku)',
-                    destinationLat: bookingVm.destinationLat ?? legacyVm.destLat ?? 6.4474,
-                    destinationLng: bookingVm.destinationLng ?? legacyVm.destLng ?? 3.4723,
+                    destinationLat: bookingVm.destinationLat ?? legacyVm.destLat ?? (_myLat + 0.015),
+                    destinationLng: bookingVm.destinationLng ?? legacyVm.destLng ?? (_myLng + 0.020),
                     destinationAddress: bookingVm.destinationAddress ?? legacyVm.destAddress ?? 'Lekki Phase 1 (Admiralty Way)',
+                    myLocationLat: _hasDeviceLocation ? _myLat : null,
+                    myLocationLng: _hasDeviceLocation ? _myLng : null,
                     nearbyDrivers: _nearbyDrivers,
                   ),
                   // Top Banner: Direct P2P notice
