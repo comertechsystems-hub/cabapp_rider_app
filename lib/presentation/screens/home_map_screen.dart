@@ -460,7 +460,6 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                             final ride = await bookingVm.bookRide();
                             if (ride != null) {
                               activeVm.setActiveRide(ride);
-                              legacyVm.bookRide();
                             }
                           },
                     style: ElevatedButton.styleFrom(
