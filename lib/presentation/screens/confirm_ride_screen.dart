@@ -259,12 +259,12 @@ class _ConfirmRideScreenState extends State<ConfirmRideScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: const [
                           Text(
-                            '100% Direct P2P Settlement',
+                            'Direct Driver Payment',
                             style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.green),
                           ),
                           SizedBox(height: 2),
                           Text(
-                            'You pay your driver directly via Cash, Bank Transfer, or POS upon trip completion. No wallet hold, no hidden fees.',
+                            'Pay your driver directly via Cash, Bank Transfer, or POS upon arrival.',
                             style: TextStyle(fontSize: 12, color: AppColors.inkSoft, height: 1.3),
                           ),
                         ],

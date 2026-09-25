@@ -67,7 +67,7 @@ class _PaymentStatusDialogState extends State<PaymentStatusDialog> {
                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                           ),
                           Text(
-                            '100% P2P settlement to driver',
+                            'Direct settlement to driver',
                             style: TextStyle(color: AppColors.inkSoft, fontSize: 12),
                           ),
                         ],

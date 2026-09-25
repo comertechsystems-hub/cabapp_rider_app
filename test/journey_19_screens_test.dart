@@ -149,7 +149,7 @@ void main() {
       expect(find.text('Complete Registration'), findsOneWidget);
     });
 
-    testWidgets('Screen 5 (Home) renders map canvas, popular locations, and P2P badge', (tester) async {
+    testWidgets('Screen 5 (Home) renders map canvas, popular locations, and fare categories', (tester) async {
       mockApi.setResponse(ApiEndpoints.getFareEstimatesAll, [
         {
           'vehicle_category': 'ECONOMY',
@@ -170,7 +170,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(Image), findsWidgets);
-      expect(find.textContaining('100% Direct P2P Settlement'), findsOneWidget);
+      expect(find.text('Victoria Island (Adeola Odeku)'), findsWidgets);
     });
 
     testWidgets('Screen 6 (Location Permission) renders value proposition and buttons', (tester) async {

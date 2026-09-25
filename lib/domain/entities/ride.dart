@@ -22,6 +22,10 @@ class ActiveRide {
   final double? actualDurationMins;
   final String? paymentMethod;
   final String? paymentStatus;
+  final double? driverLat;
+  final double? driverLng;
+  final double? driverEtaMins;
+  final double? driverDistanceKm;
   final DateTime? createdAt;
 
   const ActiveRide({
@@ -45,6 +49,10 @@ class ActiveRide {
     this.actualDurationMins,
     this.paymentMethod,
     this.paymentStatus,
+    this.driverLat,
+    this.driverLng,
+    this.driverEtaMins,
+    this.driverDistanceKm,
     this.createdAt,
   });
 
@@ -66,6 +74,7 @@ class ActiveRide {
   bool get isPaymentConfirmed => status == 'PAYMENT_CONFIRMED';
 
   bool get hasDriver => driverId != null || driverDetails != null;
+  String? get driverName => driverDetails?.name;
   bool get isDriverOnTheWay => isDriverAccepted || isDriverEnRoute;
   bool get canCancel => isRequested || isSearching || isDriverAssigned || isDriverAccepted;
 

@@ -97,6 +97,15 @@ class ActiveRideViewModel extends ChangeNotifier with ViewStateMixin {
     try {
       final updated = await rideRepo.syncRealtimeState(_currentRide!.id);
       _currentRide = updated;
+      if (updated.driverLat != null && updated.driverLng != null) {
+        _driverLocation = DriverLocationEvent(
+          rideId: updated.id,
+          driverId: updated.driverId ?? '',
+          latitude: updated.driverLat!,
+          longitude: updated.driverLng!,
+          recordedAt: DateTime.now(),
+        );
+      }
       if (!updated.isSearching && !updated.isDriverAssigned) {
         _stopSearchTimer();
       }

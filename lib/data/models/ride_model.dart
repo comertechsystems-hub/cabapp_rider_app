@@ -32,6 +32,10 @@ class RideModel extends ActiveRide {
     super.actualDurationMins,
     super.serviceArea,
     super.driverDetails,
+    super.driverLat,
+    super.driverLng,
+    super.driverEtaMins,
+    super.driverDistanceKm,
     super.createdAt,
   });
 
@@ -62,6 +66,13 @@ class RideModel extends ActiveRide {
       );
     }
 
+    final dLat = (json['driver_lat'] as num?)?.toDouble() ??
+        (json['latest_location'] is Map ? (json['latest_location']['latitude'] as num?)?.toDouble() : null);
+    final dLng = (json['driver_lng'] as num?)?.toDouble() ??
+        (json['latest_location'] is Map ? (json['latest_location']['longitude'] as num?)?.toDouble() : null);
+    final dEta = (json['driver_eta_mins'] as num?)?.toDouble();
+    final dDist = (json['driver_distance_km'] as num?)?.toDouble();
+
     return RideModel(
       id: json['name'] ?? json['id'] ?? '',
       riderId: json['rider'] ?? json['rider_id'] ?? '',
@@ -87,6 +98,10 @@ class RideModel extends ActiveRide {
       actualDurationMins: (json['actual_duration_mins'] as num?)?.toDouble(),
       serviceArea: json['service_area'],
       driverDetails: driverDetails,
+      driverLat: dLat,
+      driverLng: dLng,
+      driverEtaMins: dEta,
+      driverDistanceKm: dDist,
       createdAt: json['creation'] != null
           ? DateTime.tryParse(json['creation'])
           : (json['timestamp'] != null ? DateTime.tryParse(json['timestamp']) : null),

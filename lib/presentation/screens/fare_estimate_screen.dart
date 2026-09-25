@@ -285,7 +285,7 @@ class _FareEstimateScreenState extends State<FareEstimateScreen> {
                       const SizedBox(width: 8),
                       const Expanded(
                         child: Text(
-                          'Direct P2P Settlement: Pay 100% directly to your driver (Cash/Transfer/POS)',
+                          'Payment: Settle directly with driver via Cash, Transfer, or POS',
                           style: TextStyle(fontSize: 11, color: AppColors.inkSoft, fontWeight: FontWeight.w500),
                         ),
                       ),

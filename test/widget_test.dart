@@ -395,7 +395,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Direct Payment'), findsOneWidget);
-      expect(find.text('100% P2P settlement to driver'), findsOneWidget);
+      expect(find.text('Direct settlement to driver'), findsOneWidget);
       expect(find.text('₦3500.00'), findsOneWidget);
       expect(find.text('CASH'), findsOneWidget);
       expect(find.text('BANK TRANSFER'), findsOneWidget);

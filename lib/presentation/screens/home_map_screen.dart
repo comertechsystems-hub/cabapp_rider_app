@@ -213,38 +213,6 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                     myLocationLng: _hasDeviceLocation ? _myLng : null,
                     nearbyDrivers: _nearbyDrivers,
                   ),
-                  // Top Banner: Direct P2P notice
-                  Positioned(
-                    top: 12,
-                    left: 12,
-                    right: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: AppColors.paperRaised,
-                        borderRadius: BorderRadius.circular(100),
-                        border: Border.all(color: AppColors.line),
-                        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: const BoxDecoration(color: AppColors.green, shape: BoxShape.circle),
-                          ),
-                          const SizedBox(width: 8),
-                          const Expanded(
-                            child: Text(
-                              '100% Direct P2P Settlement • 0% Platform Commission',
-                              style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppColors.ink),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
                   // Emergency Floating SOS shortcut on Home Map
                   Positioned(
                     bottom: 12,
@@ -467,7 +435,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        '~${selectedCat?.estimatedDurationMins.toStringAsFixed(0) ?? "24"} min · ${selectedCat?.distanceKm.toStringAsFixed(1) ?? "18.2"} km · fare goes 100% to your driver',
+                        '~${selectedCat?.estimatedDurationMins.toStringAsFixed(0) ?? "24"} min · ${selectedCat?.distanceKm.toStringAsFixed(1) ?? "18.2"} km',
                         style: const TextStyle(fontSize: 11.5, color: AppColors.inkSoft),
                       ),
                     ],

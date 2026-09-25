@@ -77,7 +77,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: AppColors.ink),
                       ),
                       Text(
-                        '100% P2P payment directly to your driver',
+                        'Payment made directly to your driver',
                         style: TextStyle(color: AppColors.inkSoft, fontSize: 13),
                       ),
                     ],

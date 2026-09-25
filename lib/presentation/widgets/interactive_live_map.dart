@@ -16,6 +16,11 @@ class InteractiveLiveMap extends StatefulWidget {
   final double? myLocationLat;
   final double? myLocationLng;
   final List<Map<String, dynamic>>? nearbyDrivers;
+  final bool isDriverEnRouteToPickup;
+  final bool isTripStarted;
+  final double? driverEtaMins;
+  final double? driverDistanceKm;
+  final String? driverName;
 
   const InteractiveLiveMap({
     super.key,
@@ -30,6 +35,11 @@ class InteractiveLiveMap extends StatefulWidget {
     this.myLocationLat,
     this.myLocationLng,
     this.nearbyDrivers,
+    this.isDriverEnRouteToPickup = false,
+    this.isTripStarted = false,
+    this.driverEtaMins,
+    this.driverDistanceKm,
+    this.driverName,
   });
 
   @override
@@ -54,16 +64,30 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> {
     if (oldWidget.pickupLat != widget.pickupLat ||
         oldWidget.pickupLng != widget.pickupLng ||
         oldWidget.destinationLat != widget.destinationLat ||
-        oldWidget.destinationLng != widget.destinationLng) {
-      _recenter();
+        oldWidget.destinationLng != widget.destinationLng ||
+        oldWidget.driverLat != widget.driverLat ||
+        oldWidget.driverLng != widget.driverLng ||
+        oldWidget.isDriverEnRouteToPickup != widget.isDriverEnRouteToPickup) {
+      // Auto smooth recenter when switching state or initial coordinates
+      if (oldWidget.isDriverEnRouteToPickup != widget.isDriverEnRouteToPickup) {
+        _recenter();
+      }
     }
   }
 
   void _recenter() {
     setState(() {
-      _centerLat = (widget.pickupLat + widget.destinationLat) / 2.0;
-      _centerLng = (widget.pickupLng + widget.destinationLng) / 2.0;
-      _zoom = 13.0;
+      if (widget.isDriverEnRouteToPickup && widget.driverLat != null && widget.driverLng != null) {
+        _centerLat = (widget.driverLat! + widget.pickupLat) / 2.0;
+        _centerLng = (widget.driverLng! + widget.pickupLng) / 2.0;
+      } else if (widget.isTripStarted && widget.driverLat != null && widget.driverLng != null) {
+        _centerLat = (widget.driverLat! + widget.destinationLat) / 2.0;
+        _centerLng = (widget.driverLng! + widget.destinationLng) / 2.0;
+      } else {
+        _centerLat = (widget.pickupLat + widget.destinationLat) / 2.0;
+        _centerLng = (widget.pickupLng + widget.destinationLng) / 2.0;
+      }
+      _zoom = 13.5;
     });
   }
 
@@ -129,6 +153,40 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> {
 
         final destScreenX = _lngToPixelX(widget.destinationLng, currentZoom.toDouble()) - centerPx + width / 2.0;
         final destScreenY = _latToPixelY(widget.destinationLat, currentZoom.toDouble()) - centerPy + height / 2.0;
+
+        final driverScreenX = widget.driverLng != null
+            ? _lngToPixelX(widget.driverLng!, currentZoom.toDouble()) - centerPx + width / 2.0
+            : null;
+        final driverScreenY = widget.driverLat != null
+            ? _latToPixelY(widget.driverLat!, currentZoom.toDouble()) - centerPy + height / 2.0
+            : null;
+
+        // Dynamic route coordinates based on trip state
+        final double routeStartX;
+        final double routeStartY;
+        final double routeEndX;
+        final double routeEndY;
+        final Color routeColor;
+
+        if (widget.isDriverEnRouteToPickup && driverScreenX != null && driverScreenY != null) {
+          routeStartX = driverScreenX;
+          routeStartY = driverScreenY;
+          routeEndX = pickupScreenX;
+          routeEndY = pickupScreenY;
+          routeColor = AppColors.green;
+        } else if (widget.isTripStarted && driverScreenX != null && driverScreenY != null) {
+          routeStartX = driverScreenX;
+          routeStartY = driverScreenY;
+          routeEndX = destScreenX;
+          routeEndY = destScreenY;
+          routeColor = AppColors.navy;
+        } else {
+          routeStartX = pickupScreenX;
+          routeStartY = pickupScreenY;
+          routeEndX = destScreenX;
+          routeEndY = destScreenY;
+          routeColor = AppColors.navy;
+        }
 
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
@@ -204,12 +262,77 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> {
               CustomPaint(
                 size: Size(width, height),
                 painter: _RoutePainter(
-                  startX: pickupScreenX,
-                  startY: pickupScreenY,
-                  endX: destScreenX,
-                  endY: destScreenY,
+                  startX: routeStartX,
+                  startY: routeStartY,
+                  endX: routeEndX,
+                  endY: routeEndY,
+                  color: routeColor,
                 ),
               ),
+
+              // 3a. Live Map Guide & ETA Floating Pill
+              if (widget.isDriverEnRouteToPickup || widget.isTripStarted)
+                Positioned(
+                  top: 14,
+                  left: 16,
+                  right: 16,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 3)),
+                        ],
+                        border: Border.all(
+                          color: widget.isDriverEnRouteToPickup ? AppColors.green : AppColors.navy,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: widget.isDriverEnRouteToPickup ? AppColors.greenSoft : AppColors.navySoft,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              widget.isDriverEnRouteToPickup ? Icons.directions_car : Icons.navigation,
+                              color: widget.isDriverEnRouteToPickup ? AppColors.green : AppColors.navy,
+                              size: 16,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Flexible(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  widget.isDriverEnRouteToPickup
+                                      ? '${widget.driverName ?? "Driver"} is on the way'
+                                      : 'Heading to Destination',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.ink),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  widget.isDriverEnRouteToPickup
+                                      ? 'ETA: ${widget.driverEtaMins != null ? widget.driverEtaMins!.toStringAsFixed(0) : "4"} mins away (${widget.driverDistanceKm != null ? widget.driverDistanceKm!.toStringAsFixed(1) : "1.2"} km)'
+                                      : 'Estimated trip: ~${widget.driverEtaMins != null ? widget.driverEtaMins!.toStringAsFixed(0) : "15"} mins',
+                                  style: const TextStyle(fontSize: 11, color: AppColors.inkSoft),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
 
               // 4. Pickup Pin
               Positioned(
@@ -428,12 +551,14 @@ class _RoutePainter extends CustomPainter {
   final double startY;
   final double endX;
   final double endY;
+  final Color color;
 
   _RoutePainter({
     required this.startX,
     required this.startY,
     required this.endX,
     required this.endY,
+    this.color = AppColors.navy,
   });
 
   @override
@@ -445,7 +570,7 @@ class _RoutePainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     final routePaint = Paint()
-      ..color = AppColors.navy
+      ..color = color
       ..strokeWidth = 4.0
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
@@ -468,6 +593,7 @@ class _RoutePainter extends CustomPainter {
     return oldDelegate.startX != startX ||
         oldDelegate.startY != startY ||
         oldDelegate.endX != endX ||
-        oldDelegate.endY != endY;
+        oldDelegate.endY != endY ||
+        oldDelegate.color != color;
   }
 }

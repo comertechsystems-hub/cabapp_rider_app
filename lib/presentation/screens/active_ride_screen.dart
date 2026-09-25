@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../viewmodels/active_ride_viewmodel.dart';
@@ -20,6 +21,8 @@ class ActiveRideScreen extends StatefulWidget {
 
 class _ActiveRideScreenState extends State<ActiveRideScreen> {
   Timer? _pollingTimer;
+  String? _lastNotifiedAcceptedRideId;
+  bool _showAcceptanceBanner = false;
 
   @override
   void initState() {
@@ -72,6 +75,35 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
     }
 
     final driver = ride.driverDetails;
+    final isAcceptedOrEnRoute = ride.isDriverAccepted || ride.isDriverEnRoute;
+
+    // Detect driver acceptance transition and notify rider in-app
+    if (isAcceptedOrEnRoute && _lastNotifiedAcceptedRideId != ride.id) {
+      _lastNotifiedAcceptedRideId = ride.id;
+      _showAcceptanceBanner = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        HapticFeedback.heavyImpact();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.green,
+            duration: const Duration(seconds: 4),
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Driver Accepted! ${driver?.name ?? ride.driverName ?? "Your driver"} is on the way.',
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      });
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -102,6 +134,38 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
       ),
       body: Column(
         children: [
+          // Acceptance In-App Notification Banner
+          if (_showAcceptanceBanner && isAcceptedOrEnRoute)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              color: AppColors.green,
+              child: Row(
+                children: [
+                  const Icon(Icons.check_circle_outline, color: Colors.white, size: 22),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Ride Request Accepted',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                        Text(
+                          '${driver?.name ?? ride.driverName ?? "Driver"} accepted and is heading to your pickup.',
+                          style: const TextStyle(color: Colors.white70, fontSize: 11.5),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white70, size: 18),
+                    onPressed: () => setState(() => _showAcceptanceBanner = false),
+                  ),
+                ],
+              ),
+            ),
           // Status Banner
           Container(
             width: double.infinity,
@@ -166,8 +230,13 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
                   destinationLat: ride.destinationLat,
                   destinationLng: ride.destinationLng,
                   destinationAddress: ride.destinationAddress,
-                  driverLat: activeVm.driverLocation?.latitude,
-                  driverLng: activeVm.driverLocation?.longitude,
+                  driverLat: activeVm.driverLocation?.latitude ?? ride.driverLat,
+                  driverLng: activeVm.driverLocation?.longitude ?? ride.driverLng,
+                  isDriverEnRouteToPickup: isAcceptedOrEnRoute,
+                  isTripStarted: ride.isInProgress,
+                  driverEtaMins: ride.driverEtaMins,
+                  driverDistanceKm: ride.driverDistanceKm,
+                  driverName: driver?.name ?? ride.driverName,
                 ),
                 // Emergency SOS Button (visible during active trip)
                 if (ride.isInProgress)
