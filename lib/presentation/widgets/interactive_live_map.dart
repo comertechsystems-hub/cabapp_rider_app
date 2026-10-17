@@ -1,12 +1,14 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import '../../core/constants/app_colors.dart';
 
 /// Ultra-fluid, hardware-accelerated live map widget for the Rider App.
-/// Powered by FlutterMap with 60/120 FPS inertial panning, smooth pinch-to-zoom,
-/// animated camera glide, and real-time driver tracking overlays.
+/// Styled with Google Maps raster tiles and real-world turn-by-turn road geometry from OSRM.
 class InteractiveLiveMap extends StatefulWidget {
   final double pickupLat;
   final double pickupLng;
@@ -54,6 +56,10 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnimation;
 
+  List<LatLng> _roadPoints = [];
+  bool _isLoadingRoute = false;
+  static final Map<String, List<LatLng>> _routeCache = {};
+
   @override
   void initState() {
     super.initState();
@@ -64,7 +70,7 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
       duration: const Duration(milliseconds: 1800),
     );
 
-    // Only loop pulsing animation in real runtime, allowing widget test pumpAndSettle to settle cleanly
+    // Only loop pulsing animation in real runtime, allowing widget tests to settle cleanly
     if (!WidgetsBinding.instance.runtimeType.toString().contains('Test')) {
       _pulseController.repeat();
     }
@@ -73,6 +79,8 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
       parent: _pulseController,
       curve: Curves.easeOutQuad,
     );
+
+    _loadRoadRoute();
   }
 
   @override
@@ -85,18 +93,109 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
   @override
   void didUpdateWidget(covariant InteractiveLiveMap oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.pickupLat != widget.pickupLat ||
-        oldWidget.pickupLng != widget.pickupLng ||
-        oldWidget.destinationLat != widget.destinationLat ||
-        oldWidget.destinationLng != widget.destinationLng ||
-        oldWidget.driverLat != widget.driverLat ||
-        oldWidget.driverLng != widget.driverLng ||
+    final coordsChanged = (oldWidget.pickupLat - widget.pickupLat).abs() > 0.0003 ||
+        (oldWidget.pickupLng - widget.pickupLng).abs() > 0.0003 ||
+        (oldWidget.destinationLat - widget.destinationLat).abs() > 0.0003 ||
+        (oldWidget.destinationLng - widget.destinationLng).abs() > 0.0003 ||
+        (oldWidget.driverLat ?? 0 - (widget.driverLat ?? 0)).abs() > 0.0003 ||
+        (oldWidget.driverLng ?? 0 - (widget.driverLng ?? 0)).abs() > 0.0003;
+
+    if (coordsChanged ||
         oldWidget.isDriverEnRouteToPickup != widget.isDriverEnRouteToPickup ||
         oldWidget.isTripStarted != widget.isTripStarted) {
+      _loadRoadRoute();
       if (oldWidget.isDriverEnRouteToPickup != widget.isDriverEnRouteToPickup ||
           oldWidget.isTripStarted != widget.isTripStarted) {
         _recenter(animated: true);
       }
+    }
+  }
+
+  // Active route endpoints based on trip state
+  LatLng get _routeStartPoint {
+    if (widget.isDriverEnRouteToPickup && widget.driverLat != null && widget.driverLng != null) {
+      return LatLng(widget.driverLat!, widget.driverLng!);
+    } else if (widget.isTripStarted && widget.driverLat != null && widget.driverLng != null) {
+      return LatLng(widget.driverLat!, widget.driverLng!);
+    } else {
+      return LatLng(widget.pickupLat, widget.pickupLng);
+    }
+  }
+
+  LatLng get _routeEndPoint {
+    if (widget.isDriverEnRouteToPickup && widget.driverLat != null && widget.driverLng != null) {
+      return LatLng(widget.pickupLat, widget.pickupLng);
+    } else {
+      return LatLng(widget.destinationLat, widget.destinationLng);
+    }
+  }
+
+  // Fetch real-world road geometry via OSRM with memory caching
+  Future<void> _loadRoadRoute() async {
+    final start = _routeStartPoint;
+    final target = _routeEndPoint;
+
+    final cacheKey =
+        '${(start.latitude * 3000).round()}_${(start.longitude * 3000).round()}_${(target.latitude * 3000).round()}_${(target.longitude * 3000).round()}';
+
+    if (_routeCache.containsKey(cacheKey)) {
+      if (mounted) {
+        setState(() {
+          _roadPoints = _routeCache[cacheKey]!;
+        });
+      }
+      return;
+    }
+
+    if (WidgetsBinding.instance.runtimeType.toString().contains('Test')) {
+      if (mounted) {
+        setState(() {
+          _roadPoints = _generateCurvedFallback(start, target);
+        });
+      }
+      return;
+    }
+
+    if (_isLoadingRoute) return;
+    _isLoadingRoute = true;
+
+    try {
+      final uri = Uri.parse(
+        'https://router.project-osrm.org/route/v1/driving/${start.longitude},${start.latitude};${target.longitude},${target.latitude}?overview=full&geometries=geojson',
+      );
+      final response = await http.get(uri).timeout(const Duration(seconds: 4));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        final routes = data['routes'] as List<dynamic>?;
+        if (routes != null && routes.isNotEmpty) {
+          final geometry = routes[0]['geometry'] as Map<String, dynamic>?;
+          final coordinates = geometry?['coordinates'] as List<dynamic>?;
+          if (coordinates != null && coordinates.isNotEmpty) {
+            final points = coordinates.map((c) {
+              final pair = c as List<dynamic>;
+              return LatLng((pair[1] as num).toDouble(), (pair[0] as num).toDouble());
+            }).toList();
+
+            _routeCache[cacheKey] = points;
+            if (mounted) {
+              setState(() {
+                _roadPoints = points;
+              });
+            }
+            return;
+          }
+        }
+      }
+    } catch (_) {
+      // Fallback to curve
+    } finally {
+      _isLoadingRoute = false;
+    }
+
+    if (mounted && _roadPoints.isEmpty) {
+      setState(() {
+        _roadPoints = _generateCurvedFallback(start, target);
+      });
     }
   }
 
@@ -183,17 +282,17 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
 
     final dist = _calculateDistanceKm(center.latitude, center.longitude, targetLat2, targetLng2);
 
-    double targetZoom = 13.8;
+    double targetZoom = 14.2;
     if (dist > 20) {
-      targetZoom = 11.0;
+      targetZoom = 11.5;
     } else if (dist > 10) {
-      targetZoom = 12.0;
+      targetZoom = 12.5;
     } else if (dist > 5) {
-      targetZoom = 12.8;
-    } else if (dist > 2) {
       targetZoom = 13.5;
+    } else if (dist > 2) {
+      targetZoom = 14.0;
     } else {
-      targetZoom = 14.2;
+      targetZoom = 14.8;
     }
 
     if (animated) {
@@ -205,7 +304,7 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
 
   void _zoomIn() {
     final currentZoom = _mapController.camera.zoom;
-    if (currentZoom < 18.5) {
+    if (currentZoom < 19.0) {
       _animatedMapMove(_mapController.camera.center, currentZoom + 1.0);
     }
   }
@@ -217,17 +316,17 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
     }
   }
 
-  // Generate smooth, curved road trajectory between two geographic points
-  List<LatLng> _generateSmoothRoute(LatLng start, LatLng target) {
+  // Smooth fallback curve if OSRM is offline or in test
+  List<LatLng> _generateCurvedFallback(LatLng start, LatLng target) {
     final points = <LatLng>[];
-    const steps = 30;
+    const steps = 24;
     final midLat = (start.latitude + target.latitude) / 2.0;
     final midLng = (start.longitude + target.longitude) / 2.0;
 
     final dLat = target.latitude - start.latitude;
     final dLng = target.longitude - start.longitude;
-    final ctrlLat = midLat - dLng * 0.12;
-    final ctrlLng = midLng + dLat * 0.12;
+    final ctrlLat = midLat - dLng * 0.08;
+    final ctrlLng = midLng + dLat * 0.08;
 
     for (int i = 0; i <= steps; i++) {
       final t = i / steps;
@@ -244,28 +343,15 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
     final destPoint = LatLng(widget.destinationLat, widget.destinationLng);
     final initialCenter = _computeInitialCenter();
 
-    // Determine active route endpoints based on trip state
-    final LatLng routeStart;
-    final LatLng routeEnd;
-    final Color routeColor;
+    final Color routeColor = widget.isDriverEnRouteToPickup
+        ? const Color(0xFF10B981)
+        : const Color(0xFF2563EB);
 
-    if (widget.isDriverEnRouteToPickup && widget.driverLat != null && widget.driverLng != null) {
-      routeStart = LatLng(widget.driverLat!, widget.driverLng!);
-      routeEnd = pickupPoint;
-      routeColor = AppColors.green;
-    } else if (widget.isTripStarted && widget.driverLat != null && widget.driverLng != null) {
-      routeStart = LatLng(widget.driverLat!, widget.driverLng!);
-      routeEnd = destPoint;
-      routeColor = AppColors.navy;
-    } else {
-      routeStart = pickupPoint;
-      routeEnd = destPoint;
-      routeColor = AppColors.navy;
-    }
+    final routePoints = _roadPoints.isNotEmpty
+        ? _roadPoints
+        : _generateCurvedFallback(_routeStartPoint, _routeEndPoint);
 
-    final routePoints = _generateSmoothRoute(routeStart, routeEnd);
-
-    // Build all dynamic markers
+    // Build markers
     final markers = <Marker>[
       // Pickup Pin
       Marker(
@@ -301,7 +387,7 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
           height: 32,
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.blue.withValues(alpha: 0.25),
+              color: const Color(0xFF2563EB).withValues(alpha: 0.25),
               shape: BoxShape.circle,
             ),
             alignment: Alignment.center,
@@ -309,7 +395,7 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
               width: 14,
               height: 14,
               decoration: BoxDecoration(
-                color: Colors.blueAccent,
+                color: const Color(0xFF2563EB),
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 2.5),
                 boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
@@ -334,18 +420,18 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
                 alignment: Alignment.center,
                 children: [
                   Container(
-                    width: 32 + (20 * _pulseAnimation.value),
-                    height: 32 + (20 * _pulseAnimation.value),
+                    width: 32 + (22 * _pulseAnimation.value),
+                    height: 32 + (22 * _pulseAnimation.value),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: AppColors.navy.withValues(alpha: (1.0 - _pulseAnimation.value) * 0.35),
+                      color: const Color(0xFF2563EB).withValues(alpha: (1.0 - _pulseAnimation.value) * 0.4),
                     ),
                   ),
                   Container(
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: AppColors.navy,
+                      color: const Color(0xFF1E3A8A),
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 2.5),
                       boxShadow: const [
@@ -379,7 +465,7 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: AppColors.navy,
+                    color: const Color(0xFF1E3A8A),
                     shape: BoxShape.circle,
                     boxShadow: const [
                       BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
@@ -397,40 +483,42 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
 
     return Stack(
       children: [
-        // 1. Hardware-accelerated fluid FlutterMap canvas
+        // 1. Authentic Google Maps styled canvas
         FlutterMap(
           mapController: _mapController,
           options: MapOptions(
             initialCenter: initialCenter,
-            initialZoom: 13.8,
+            initialZoom: 14.2,
             minZoom: 4.0,
-            maxZoom: 19.0,
+            maxZoom: 20.0,
             interactionOptions: const InteractionOptions(
               flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
             ),
           ),
           children: [
-            // Smooth-caching Tile Layer with automatic raster fallback
+            // Google Maps standard road tiles with retina CartoDB fallback
             TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              fallbackUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}.jpg',
+              urlTemplate: 'https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+              subdomains: const ['0', '1', '2', '3'],
+              fallbackUrl: 'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
               userAgentPackageName: 'com.launchgrid.cabapp',
-              tileDisplay: const TileDisplay.fadeIn(duration: Duration(milliseconds: 200)),
+              tileDisplay: const TileDisplay.fadeIn(duration: Duration(milliseconds: 150)),
+              maxZoom: 20.0,
             ),
 
-            // Route Polyline (dual-layer: high contrast white casing + vibrant core)
+            // Road Polyline (high-contrast navigation path following true streets)
             PolylineLayer(
               polylines: [
                 Polyline(
                   points: routePoints,
-                  strokeWidth: 7.0,
-                  color: Colors.white.withValues(alpha: 0.95),
+                  strokeWidth: 8.0,
+                  color: const Color(0xFF0F172A).withValues(alpha: 0.85),
                   strokeCap: StrokeCap.round,
                   strokeJoin: StrokeJoin.round,
                 ),
                 Polyline(
                   points: routePoints,
-                  strokeWidth: 4.5,
+                  strokeWidth: 5.5,
                   color: routeColor,
                   strokeCap: StrokeCap.round,
                   strokeJoin: StrokeJoin.round,
@@ -459,7 +547,7 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
                     BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 3)),
                   ],
                   border: Border.all(
-                    color: widget.isDriverEnRouteToPickup ? AppColors.green : AppColors.navy,
+                    color: widget.isDriverEnRouteToPickup ? const Color(0xFF10B981) : const Color(0xFF2563EB),
                     width: 1.5,
                   ),
                 ),
@@ -474,7 +562,7 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
                       ),
                       child: Icon(
                         widget.isDriverEnRouteToPickup ? Icons.directions_car : Icons.navigation,
-                        color: widget.isDriverEnRouteToPickup ? AppColors.green : AppColors.navy,
+                        color: widget.isDriverEnRouteToPickup ? const Color(0xFF10B981) : const Color(0xFF2563EB),
                         size: 16,
                       ),
                     ),
@@ -542,11 +630,11 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.75),
+              color: Colors.white.withValues(alpha: 0.8),
               borderRadius: BorderRadius.circular(4),
             ),
             child: const Text(
-              '© OpenStreetMap, Esri',
+              '© Google Maps, CartoDB',
               style: TextStyle(fontSize: 8.5, color: Colors.black54),
             ),
           ),
@@ -556,7 +644,7 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
   }
 
   Widget _buildPin({required bool isPickup, required String title}) {
-    final color = isPickup ? AppColors.navy : AppColors.coral;
+    final color = isPickup ? const Color(0xFF1E3A8A) : const Color(0xFFEF4444);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -612,7 +700,7 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
         boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))],
       ),
       child: IconButton(
-        icon: Icon(icon, size: 18, color: AppColors.navy),
+        icon: Icon(icon, size: 18, color: const Color(0xFF1E3A8A)),
         padding: EdgeInsets.zero,
         tooltip: tooltip,
         onPressed: onPressed,

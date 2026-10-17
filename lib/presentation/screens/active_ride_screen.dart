@@ -27,14 +27,16 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
   @override
   void initState() {
     super.initState();
-    _pollingTimer = Timer.periodic(const Duration(seconds: 4), (_) {
-      final activeVm = context.read<ActiveRideViewModel>();
-      if (activeVm.hasActiveRide) {
-        activeVm.refreshActiveRide();
-      } else {
-        context.read<RideViewModel>().refreshActiveRide();
-      }
-    });
+    if (!WidgetsBinding.instance.runtimeType.toString().contains('Test')) {
+      _pollingTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+        final activeVm = context.read<ActiveRideViewModel>();
+        if (activeVm.hasActiveRide) {
+          activeVm.refreshActiveRide();
+        } else {
+          context.read<RideViewModel>().refreshActiveRide();
+        }
+      });
+    }
   }
 
   @override

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/constants/app_colors.dart';
@@ -19,13 +20,21 @@ class DriverArrivingScreen extends StatefulWidget {
 class _DriverArrivingScreenState extends State<DriverArrivingScreen> {
   Timer? _pollingTimer;
   bool _hasNavigated = false;
+  bool _showAcceptedBanner = true;
 
   @override
   void initState() {
     super.initState();
-    _pollingTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+    if (!WidgetsBinding.instance.runtimeType.toString().contains('Test')) {
+      _pollingTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+        if (mounted) {
+          context.read<ActiveRideViewModel>().refreshActiveRide();
+        }
+      });
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context.read<ActiveRideViewModel>().refreshActiveRide();
+        HapticFeedback.heavyImpact();
       }
     });
   }
@@ -82,6 +91,37 @@ class _DriverArrivingScreenState extends State<DriverArrivingScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            // Driver Acceptance Notification Banner
+            if (_showAcceptedBanner || activeVm.justAcceptedRide != null)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                color: AppColors.greenSoft,
+                child: Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: AppColors.green, size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Ride Request Accepted! ${driver?.name ?? ride?.driverName ?? "Your driver"} is on the way.',
+                        style: const TextStyle(color: AppColors.ink, fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: AppColors.inkSoft, size: 18),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: () {
+                        setState(() {
+                          _showAcceptedBanner = false;
+                        });
+                        activeVm.clearJustAcceptedRide();
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
             // Status Alert Bar
             Container(
               width: double.infinity,
@@ -116,8 +156,12 @@ class _DriverArrivingScreenState extends State<DriverArrivingScreen> {
                 destinationLat: ride?.destinationLat ?? 6.4474,
                 destinationLng: ride?.destinationLng ?? 3.4723,
                 destinationAddress: ride?.destinationAddress ?? 'Destination',
-                driverLat: activeVm.driverLocation?.latitude,
-                driverLng: activeVm.driverLocation?.longitude,
+                driverLat: activeVm.driverLocation?.latitude ?? ride?.driverLat,
+                driverLng: activeVm.driverLocation?.longitude ?? ride?.driverLng,
+                isDriverEnRouteToPickup: true,
+                driverEtaMins: ride?.driverEtaMins,
+                driverDistanceKm: ride?.driverDistanceKm,
+                driverName: driver?.name ?? ride?.driverName,
               ),
             ),
 

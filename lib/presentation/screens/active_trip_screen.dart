@@ -193,8 +193,12 @@ class _ActiveTripScreenState extends State<ActiveTripScreen> {
                       destinationLat: ride?.destinationLat ?? 6.4474,
                       destinationLng: ride?.destinationLng ?? 3.4723,
                       destinationAddress: ride?.destinationAddress ?? 'Destination',
-                      driverLat: activeVm.driverLocation?.latitude,
-                      driverLng: activeVm.driverLocation?.longitude,
+                      driverLat: activeVm.driverLocation?.latitude ?? ride?.driverLat,
+                      driverLng: activeVm.driverLocation?.longitude ?? ride?.driverLng,
+                      isTripStarted: true,
+                      driverEtaMins: ride?.driverEtaMins,
+                      driverDistanceKm: ride?.driverDistanceKm,
+                      driverName: driver?.name ?? ride?.driverName,
                     ),
                     // Floating SOS Button in top-right corner
                     Positioned(

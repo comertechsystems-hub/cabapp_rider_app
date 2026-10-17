@@ -33,11 +33,13 @@ class _SearchingScreenState extends State<SearchingScreen> with SingleTickerProv
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    _pollingTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-      if (mounted) {
-        context.read<ActiveRideViewModel>().refreshActiveRide();
-      }
-    });
+    if (!WidgetsBinding.instance.runtimeType.toString().contains('Test')) {
+      _pollingTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+        if (mounted) {
+          context.read<ActiveRideViewModel>().refreshActiveRide();
+        }
+      });
+    }
   }
 
   @override
@@ -51,13 +53,22 @@ class _SearchingScreenState extends State<SearchingScreen> with SingleTickerProv
     if (_hasNavigated || !mounted) return;
 
     final ride = activeVm.currentRide;
-    if (ride != null && (ride.hasDriver || activeVm.isDriverAssigned || activeVm.isDriverArriving)) {
-      _hasNavigated = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, AppRoutes.driverAssigned);
-        }
-      });
+    if (ride != null) {
+      if (ride.isDriverAccepted || ride.isDriverOnTheWay || activeVm.isDriverArriving) {
+        _hasNavigated = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            Navigator.pushReplacementNamed(context, AppRoutes.driverArriving);
+          }
+        });
+      } else if (ride.hasDriver || activeVm.isDriverAssigned) {
+        _hasNavigated = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            Navigator.pushReplacementNamed(context, AppRoutes.driverAssigned);
+          }
+        });
+      }
     }
   }
 

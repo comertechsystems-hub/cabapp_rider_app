@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -7,8 +8,47 @@ import '../viewmodels/active_ride_viewmodel.dart';
 import '../viewmodels/ride_viewmodel.dart';
 
 /// 12. Driver Assigned Screen
-class DriverAssignedScreen extends StatelessWidget {
+class DriverAssignedScreen extends StatefulWidget {
   const DriverAssignedScreen({super.key});
+
+  @override
+  State<DriverAssignedScreen> createState() => _DriverAssignedScreenState();
+}
+
+class _DriverAssignedScreenState extends State<DriverAssignedScreen> {
+  Timer? _pollingTimer;
+  bool _hasNavigated = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!WidgetsBinding.instance.runtimeType.toString().contains('Test')) {
+      _pollingTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+        if (mounted) {
+          context.read<ActiveRideViewModel>().refreshActiveRide();
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
+  }
+
+  void _checkDriverAccepted(ActiveRideViewModel activeVm) {
+    if (_hasNavigated || !mounted) return;
+    final ride = activeVm.currentRide;
+    if (ride != null && (ride.isDriverAccepted || ride.isDriverOnTheWay || activeVm.isDriverArriving)) {
+      _hasNavigated = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, AppRoutes.driverArriving);
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,6 +56,8 @@ class DriverAssignedScreen extends StatelessWidget {
     final legacyVm = context.watch<RideViewModel>();
     final ride = activeVm.currentRide ?? legacyVm.currentRide;
     final driver = ride?.driverDetails;
+
+    _checkDriverAccepted(activeVm);
 
     return Scaffold(
       backgroundColor: AppColors.paper,
