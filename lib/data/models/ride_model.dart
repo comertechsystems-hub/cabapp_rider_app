@@ -36,6 +36,7 @@ class RideModel extends ActiveRide {
     super.driverLng,
     super.driverEtaMins,
     super.driverDistanceKm,
+    super.chatMessages = const [],
     super.createdAt,
   });
 
@@ -73,6 +74,11 @@ class RideModel extends ActiveRide {
     final dEta = (json['driver_eta_mins'] as num?)?.toDouble();
     final dDist = (json['driver_distance_km'] as num?)?.toDouble();
 
+    final rawChat = json['chat_messages'];
+    final List<Map<String, dynamic>> parsedChat = rawChat is List
+        ? rawChat.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
+        : const [];
+
     return RideModel(
       id: json['name'] ?? json['id'] ?? '',
       riderId: json['rider'] ?? json['rider_id'] ?? '',
@@ -102,6 +108,7 @@ class RideModel extends ActiveRide {
       driverLng: dLng,
       driverEtaMins: dEta,
       driverDistanceKm: dDist,
+      chatMessages: parsedChat,
       createdAt: json['creation'] != null
           ? DateTime.tryParse(json['creation'])
           : (json['timestamp'] != null ? DateTime.tryParse(json['timestamp']) : null),

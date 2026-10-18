@@ -108,6 +108,11 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
       });
     }
 
+    final chatMessages = ride.chatMessages;
+    final driverMessages = chatMessages.where((m) => m['sender_role'] == 'DRIVER').toList();
+    final lastDriverMessage = driverMessages.isNotEmpty ? driverMessages.last : null;
+    final hasAssignedDriver = !ride.isSearching && !ride.isDriverAssigned && !ride.isCancelled;
+
     return Scaffold(
       appBar: AppBar(
         leading: (ride.isCancelled || ride.isCompleted)
@@ -128,6 +133,36 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         actions: [
+          if (hasAssignedDriver && !ride.isCompleted)
+            IconButton(
+              tooltip: 'Chat with Driver',
+              icon: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(Icons.chat_bubble_outline, color: AppColors.navy),
+                  if (driverMessages.isNotEmpty)
+                    Positioned(
+                      right: -3,
+                      top: -3,
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: const BoxDecoration(
+                          color: AppColors.coral,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              onPressed: () => _showChatModal(
+                context,
+                activeVm,
+                legacyRideVm,
+                ride.id,
+                driver?.name ?? ride.driverName ?? 'Driver',
+              ),
+            ),
           if (ride.canCancel)
             TextButton(
               onPressed: () => _showCancelDialog(context, activeVm, legacyRideVm),
@@ -135,374 +170,504 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
             ),
         ],
       ),
-      body: Column(
-        children: [
-          // Acceptance In-App Notification Banner
-          if (_showAcceptanceBanner && isAcceptedOrEnRoute)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              color: AppColors.green,
-              child: Row(
-                children: [
-                  const Icon(Icons.check_circle_outline, color: Colors.white, size: 22),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Ride Request Accepted',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                        ),
-                        Text(
-                          '${driver?.name ?? ride.driverName ?? "Driver"} accepted and is heading to your pickup.',
-                          style: const TextStyle(color: Colors.white70, fontSize: 11.5),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white70, size: 18),
-                    onPressed: () => setState(() => _showAcceptanceBanner = false),
-                  ),
-                ],
-              ),
-            ),
-          // Status Banner
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-            color: ride.isCompleted
-                ? AppColors.greenSoft
-                : (ride.isInProgress ? AppColors.navySoft : AppColors.navy),
-            child: Row(
-              children: [
-                Icon(
-                  ride.isCompleted
-                      ? Icons.check_circle
-                      : (ride.isInProgress ? Icons.navigation : Icons.access_time),
-                  color: ride.isCompleted ? AppColors.green : Colors.white,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _getStatusTitle(ride.status),
-                        style: TextStyle(
-                          color: ride.isCompleted ? AppColors.green : Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
-                      ),
-                      Text(
-                        _getStatusSubtitle(ride.status),
-                        style: TextStyle(
-                          color: ride.isCompleted ? AppColors.ink : Colors.white70,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (ride.isSearching || ride.isDriverAssigned)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white24,
-                      borderRadius: BorderRadius.circular(100),
-                    ),
-                    child: Text(
-                      '${activeVm.searchSecondsElapsed}s',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-                    ),
-                  )
-                else if (isAcceptedOrEnRoute)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: AppColors.green,
-                      borderRadius: BorderRadius.circular(100),
-                    ),
-                    child: Text(
-                      '~${(ride.driverEtaMins ?? 3.0).toStringAsFixed(0)} min · ${(ride.driverDistanceKm ?? 0.7).toStringAsFixed(1)} km',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11.5),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          // Live Map Area
-          Expanded(
-            child: Stack(
-              children: [
-                InteractiveLiveMap(
-                  pickupLat: ride.pickupLat,
-                  pickupLng: ride.pickupLng,
-                  pickupAddress: ride.pickupAddress,
-                  destinationLat: ride.destinationLat,
-                  destinationLng: ride.destinationLng,
-                  destinationAddress: ride.destinationAddress,
-                  driverLat: activeVm.driverLocation?.latitude ?? ride.driverLat,
-                  driverLng: activeVm.driverLocation?.longitude ?? ride.driverLng,
-                  isDriverEnRouteToPickup: isAcceptedOrEnRoute,
-                  isTripStarted: ride.isInProgress,
-                  driverEtaMins: ride.driverEtaMins,
-                  driverDistanceKm: ride.driverDistanceKm,
-                  driverName: driver?.name ?? ride.driverName,
-                ),
-                // Emergency SOS Button (visible during active trip)
-                if (ride.isInProgress)
-                  Positioned(
-                    top: 16,
-                    right: 16,
-                    child: FloatingActionButton.extended(
-                      backgroundColor: AppColors.coral,
-                      icon: const Icon(Icons.warning, color: Colors.white),
-                      label: const Text('EMERGENCY SOS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-                      onPressed: () => _triggerSos(context, ride.id),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          // Bottom Card
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: const BoxDecoration(
-              color: AppColors.paperRaised,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-              boxShadow: [
-                BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -2)),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 4-Digit Start OTP PIN Box (Crucial for Rider & Driver)
-                // Only show Start PIN when driver has accepted and is on the way / arrived
-                if (ride.startOtp != null && !ride.isSearching && !ride.isDriverAssigned && !ride.isInProgress && !ride.isCompleted) ...[
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: AppColors.coralSoft,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.coral.withValues(alpha: 0.3)),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'TRIP START PIN',
-                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.coral),
-                            ),
-                            Text(
-                              'Share with driver upon entering vehicle',
-                              style: TextStyle(fontSize: 12, color: AppColors.inkSoft),
-                            ),
-                          ],
-                        ),
-                        Text(
-                          ride.startOtp!,
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 4.0,
-                            color: AppColors.coral,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                // Connecting radar while searching or awaiting driver accept
-                if (ride.isSearching || ride.isDriverAssigned) ...[
-                  Row(
-                    children: [
-                      const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(strokeWidth: 2.5, color: AppColors.navy),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              ride.isDriverAssigned
-                                  ? 'Ride offered to nearby driver...'
-                                  : 'Connecting with closest driver...',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.ink),
-                            ),
-                            Text(
-                              ride.isDriverAssigned
-                                  ? 'Awaiting driver mobile confirmation'
-                                  : 'Broadcasting within service area',
-                              style: const TextStyle(fontSize: 12, color: AppColors.inkSoft),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                // Assigned Driver Card (Displayed once driver ACCEPTS)
-                if (!ride.isSearching && !ride.isDriverAssigned && (driver != null || ride.hasDriver)) ...[
-                  Row(
-                    children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: AppColors.paper,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: AppColors.line),
-                        ),
-                        child: const Icon(Icons.person, color: AppColors.navy),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              driver?.name ?? (ride.driverDetails?.name ?? 'Assigned Driver'),
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                            ),
-                            Text(
-                              '${driver?.vehicleDescription ?? "Vehicle"} • ${driver?.licensePlate ?? "Verified"}',
-                              style: const TextStyle(color: AppColors.inkSoft, fontSize: 13),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (driver != null && driver.rating > 0)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.goldSoft,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.star, color: AppColors.gold, size: 14),
-                              const SizedBox(width: 4),
-                              Text(
-                                driver.rating.toStringAsFixed(1),
-                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.goldInk),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
-                  ),
-                  const Divider(height: 24, color: AppColors.line),
-                ],
-                // Addresses Summary
-                Row(
+      body: SafeArea(
+        top: false,
+        bottom: true,
+        child: Column(
+          children: [
+            // Acceptance In-App Notification Banner
+            if (_showAcceptanceBanner && isAcceptedOrEnRoute)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                color: AppColors.green,
+                child: Row(
                   children: [
+                    const Icon(Icons.check_circle_outline, color: Colors.white, size: 22),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            ride.pickupAddress,
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                          const Text(
+                            'Ride Request Accepted',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
                           ),
-                          const SizedBox(height: 2),
                           Text(
-                            ride.destinationAddress,
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.inkSoft),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            '${driver?.name ?? ride.driverName ?? "Driver"} accepted and is heading to your pickup.',
+                            style: const TextStyle(color: Colors.white70, fontSize: 11.5),
                           ),
                         ],
                       ),
                     ),
-                    Text(
-                      '₦${ride.displayFare.toStringAsFixed(2)}',
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.navy),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white70, size: 18),
+                      onPressed: () => setState(() => _showAcceptanceBanner = false),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                // Action Buttons
-                if (ride.isCompleted) ...[
-                  Row(
+              ),
+            // Status Banner
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              color: ride.isCompleted
+                  ? AppColors.greenSoft
+                  : (ride.isInProgress ? AppColors.navySoft : AppColors.navy),
+              child: Row(
+                children: [
+                  Icon(
+                    ride.isCompleted
+                        ? Icons.check_circle
+                        : (ride.isInProgress ? Icons.navigation : Icons.access_time),
+                    color: ride.isCompleted ? AppColors.green : Colors.white,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _getStatusTitle(ride.status),
+                          style: TextStyle(
+                            color: ride.isCompleted ? AppColors.green : Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14.5,
+                          ),
+                        ),
+                        Text(
+                          _getStatusSubtitle(ride.status),
+                          style: TextStyle(
+                            color: ride.isCompleted ? AppColors.ink : Colors.white70,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (ride.isSearching || ride.isDriverAssigned)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: Text(
+                        '${activeVm.searchSecondsElapsed}s',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                    )
+                  else if (isAcceptedOrEnRoute)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: AppColors.green,
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: Text(
+                        '~${(ride.driverEtaMins ?? 3.0).toStringAsFixed(0)} min · ${(ride.driverDistanceKm ?? 0.7).toStringAsFixed(1)} km',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11.5),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            // Live Map Area
+            Expanded(
+              child: Stack(
+                children: [
+                  InteractiveLiveMap(
+                    pickupLat: ride.pickupLat,
+                    pickupLng: ride.pickupLng,
+                    pickupAddress: ride.pickupAddress,
+                    destinationLat: ride.destinationLat,
+                    destinationLng: ride.destinationLng,
+                    destinationAddress: ride.destinationAddress,
+                    driverLat: activeVm.driverLocation?.latitude ?? ride.driverLat,
+                    driverLng: activeVm.driverLocation?.longitude ?? ride.driverLng,
+                    isDriverEnRouteToPickup: isAcceptedOrEnRoute,
+                    isTripStarted: ride.isInProgress,
+                    driverEtaMins: ride.driverEtaMins,
+                    driverDistanceKm: ride.driverDistanceKm,
+                    driverName: driver?.name ?? ride.driverName,
+                  ),
+                  // Emergency SOS Button (visible during active trip)
+                  if (ride.isInProgress)
+                    Positioned(
+                      top: 16,
+                      right: 16,
+                      child: FloatingActionButton.extended(
+                        backgroundColor: AppColors.coral,
+                        icon: const Icon(Icons.warning, color: Colors.white),
+                        label: const Text('EMERGENCY SOS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                        onPressed: () => _triggerSos(context, ride.id),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            // Bottom Card (Scroll-safe for all Android screens)
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.48,
+              ),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                decoration: const BoxDecoration(
+                  color: AppColors.paperRaised,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -2)),
+                  ],
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => _openRatingDialog(context, ride.id, driver?.name ?? 'Driver'),
-                          child: const Text('Rate Driver'),
+                      // 4-Digit Start OTP PIN Box (Crucial for Rider & Driver)
+                      if (ride.startOtp != null && !ride.isSearching && !ride.isDriverAssigned && !ride.isInProgress && !ride.isCompleted) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: AppColors.coralSoft,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: AppColors.coral.withValues(alpha: 0.3)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'TRIP START PIN',
+                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.coral),
+                                  ),
+                                  Text(
+                                    'Share with driver upon entering vehicle',
+                                    style: TextStyle(fontSize: 11.5, color: AppColors.inkSoft),
+                                  ),
+                                ],
+                              ),
+                              Text(
+                                ride.startOtp!,
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 4.0,
+                                  color: AppColors.coral,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () => _openPaymentDialog(context, ride.id, ride.displayFare),
-                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.green),
-                          child: const Text('Payment Status'),
+                        const SizedBox(height: 12),
+                      ],
+                      // Connecting radar while searching or awaiting driver accept
+                      if (ride.isSearching || ride.isDriverAssigned) ...[
+                        Row(
+                          children: [
+                            const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2.5, color: AppColors.navy),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    ride.isDriverAssigned
+                                        ? 'Ride offered to nearby driver...'
+                                        : 'Connecting with closest driver...',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.ink),
+                                  ),
+                                  Text(
+                                    ride.isDriverAssigned
+                                        ? 'Awaiting driver mobile confirmation'
+                                        : 'Broadcasting across metropolitan drivers',
+                                    style: const TextStyle(fontSize: 12, color: AppColors.inkSoft),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
+                        const SizedBox(height: 14),
+                      ],
+                      // Assigned Driver Card + Call / Chat Actions (Displayed once driver ACCEPTS or is active)
+                      if (hasAssignedDriver) ...[
+                        if (lastDriverMessage != null) ...[
+                          InkWell(
+                            onTap: () => _showChatModal(
+                              context,
+                              activeVm,
+                              legacyRideVm,
+                              ride.id,
+                              driver?.name ?? ride.driverName ?? 'Driver',
+                            ),
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: AppColors.navySoft,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: AppColors.navy.withValues(alpha: 0.25)),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.chat_bubble, size: 15, color: AppColors.navy),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      '${driver?.name ?? "Driver"}: "${lastDriverMessage['message'] ?? ''}"',
+                                      style: const TextStyle(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.ink,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const Text(
+                                    'Reply',
+                                    style: TextStyle(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.navy,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                        Row(
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: AppColors.paper,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: AppColors.line),
+                              ),
+                              child: const Icon(Icons.person, color: AppColors.navy),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    driver?.name ?? (ride.driverName ?? 'Assigned Driver'),
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                  ),
+                                  Text(
+                                    '${driver?.vehicleDescription ?? "Vehicle"} • ${driver?.licensePlate ?? "Verified"}',
+                                    style: const TextStyle(color: AppColors.inkSoft, fontSize: 12.5),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (driver != null && driver.rating > 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppColors.goldSoft,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.star, color: AppColors.gold, size: 14),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      driver.rating.toStringAsFixed(1),
+                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.goldInk),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+                        if (!ride.isCompleted) ...[
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    side: const BorderSide(color: AppColors.line),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  ),
+                                  icon: const Icon(Icons.call, size: 17, color: AppColors.navy),
+                                  label: const Text(
+                                    'Call Driver',
+                                    style: TextStyle(color: AppColors.navy, fontWeight: FontWeight.w600, fontSize: 13),
+                                  ),
+                                  onPressed: () async {
+                                    final phone = driver?.phoneNumber ?? '+2348000000000';
+                                    await Clipboard.setData(ClipboardData(text: phone));
+                                    if (!context.mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Driver phone ($phone) copied · Ready to call')),
+                                    );
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.navy,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  ),
+                                  icon: Stack(
+                                    clipBehavior: Clip.none,
+                                    children: [
+                                      const Icon(Icons.chat_bubble_outline, size: 17, color: Colors.white),
+                                      if (driverMessages.isNotEmpty)
+                                        Positioned(
+                                          right: -4,
+                                          top: -4,
+                                          child: Container(
+                                            width: 9,
+                                            height: 9,
+                                            decoration: const BoxDecoration(
+                                              color: AppColors.coral,
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  label: Text(
+                                    chatMessages.isNotEmpty
+                                        ? 'Chat (${chatMessages.length})'
+                                        : 'Chat with Driver',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                  ),
+                                  onPressed: () => _showChatModal(
+                                    context,
+                                    activeVm,
+                                    legacyRideVm,
+                                    ride.id,
+                                    driver?.name ?? ride.driverName ?? 'Driver',
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        const Divider(height: 20, color: AppColors.line),
+                      ],
+                      // Addresses Summary
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  ride.pickupAddress,
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  ride.destinationAddress,
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.inkSoft),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            '₦${ride.displayFare.toStringAsFixed(2)}',
+                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.navy),
+                          ),
+                        ],
                       ),
+                      const SizedBox(height: 12),
+                      // Action Buttons
+                      if (ride.isCompleted) ...[
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () => _openRatingDialog(context, ride.id, driver?.name ?? 'Driver'),
+                                child: const Text('Rate Driver'),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () => _openPaymentDialog(context, ride.id, ride.displayFare),
+                                style: ElevatedButton.styleFrom(backgroundColor: AppColors.green),
+                                child: const Text('Payment Status'),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 44,
+                          child: TextButton(
+                            onPressed: () {
+                              activeVm.reset();
+                              legacyRideVm.reset();
+                            },
+                            child: const Text('Back to Home'),
+                          ),
+                        ),
+                      ] else if (ride.isPaymentPending) ...[
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ElevatedButton(
+                            onPressed: () => _openPaymentDialog(context, ride.id, ride.displayFare),
+                            style: ElevatedButton.styleFrom(backgroundColor: AppColors.green),
+                            child: const Text('Confirm Payment Made'),
+                          ),
+                        ),
+                      ] else if (ride.isCancelled) ...[
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              activeVm.reset();
+                              legacyRideVm.reset();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.navy,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                            child: const Text(
+                              'Back to Home / Book Again',
+                              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: TextButton(
-                      onPressed: () {
-                        activeVm.reset();
-                        legacyRideVm.reset();
-                      },
-                      child: const Text('Back to Home'),
-                    ),
-                  ),
-                ] else if (ride.isPaymentPending) ...[
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: () => _openPaymentDialog(context, ride.id, ride.displayFare),
-                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.green),
-                      child: const Text('Confirm Payment Made'),
-                    ),
-                  ),
-                ] else if (ride.isCancelled) ...[
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        activeVm.reset();
-                        legacyRideVm.reset();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.navy,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                      child: const Text(
-                        'Back to Home / Book Again',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-                      ),
-                    ),
-                  ),
-                ],
-              ],
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -641,6 +806,209 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
           );
         },
       ),
+    );
+  }
+
+  void _showChatModal(
+    BuildContext context,
+    ActiveRideViewModel activeVm,
+    RideViewModel legacyVm,
+    String rideId,
+    String driverName,
+  ) {
+    final textController = TextEditingController();
+    final presets = [
+      "I'm waiting at the pickup spot.",
+      "I'll be right out in 1 minute.",
+      "Please call me when you arrive at the gate.",
+      "What color is your vehicle?",
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.paperRaised,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            return Consumer2<ActiveRideViewModel, RideViewModel>(
+              builder: (ctx, liveActiveVm, liveLegacyVm, _) {
+                final liveRide = liveActiveVm.currentRide ?? liveLegacyVm.currentRide;
+                final messages = liveRide?.chatMessages ?? const [];
+
+                Future<void> sendMessage(String text) async {
+                  final trimmed = text.trim();
+                  if (trimmed.isEmpty) return;
+                  textController.clear();
+                  if (liveActiveVm.currentRide != null) {
+                    await liveActiveVm.sendChatMessage(trimmed, overrideRideId: rideId);
+                  } else {
+                    await liveLegacyVm.sendChatMessage(trimmed);
+                  }
+                  if (ctx.mounted) {
+                    setSheetState(() {});
+                  }
+                }
+
+                return Padding(
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(ctx).viewInsets.bottom,
+                  ),
+                  child: SafeArea(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight: MediaQuery.of(ctx).size.height * 0.72,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.chat_bubble, color: AppColors.navy, size: 20),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Chat with $driverName',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.ink,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.close, size: 20, color: AppColors.inkSoft),
+                                  onPressed: () => Navigator.pop(ctx),
+                                ),
+                              ],
+                            ),
+                            const Divider(height: 12, color: AppColors.line),
+                            Flexible(
+                              child: messages.isEmpty
+                                  ? Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 16),
+                                      child: Center(
+                                        child: Text(
+                                          'Send a message to $driverName or tap a quick reply below.',
+                                          style: const TextStyle(color: AppColors.inkSoft, fontSize: 13),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ),
+                                    )
+                                  : ListView.builder(
+                                      shrinkWrap: true,
+                                      itemCount: messages.length,
+                                      itemBuilder: (context, idx) {
+                                        final m = messages[idx];
+                                        final isRider = m['sender_role'] == 'RIDER';
+                                        return Align(
+                                          alignment: isRider ? Alignment.centerRight : Alignment.centerLeft,
+                                          child: Container(
+                                            margin: const EdgeInsets.symmetric(vertical: 4),
+                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                            constraints: BoxConstraints(
+                                              maxWidth: MediaQuery.of(ctx).size.width * 0.75,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: isRider ? AppColors.navy : AppColors.paper,
+                                              borderRadius: BorderRadius.circular(12),
+                                              border: isRider ? null : Border.all(color: AppColors.line),
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  isRider ? 'You' : (m['sender_name']?.toString() ?? driverName),
+                                                  style: TextStyle(
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: isRider ? Colors.white70 : AppColors.navy,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  m['message']?.toString() ?? '',
+                                                  style: TextStyle(
+                                                    fontSize: 13.5,
+                                                    color: isRider ? Colors.white : AppColors.ink,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                            ),
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              height: 34,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: presets.length,
+                                separatorBuilder: (_, __) => const SizedBox(width: 6),
+                                itemBuilder: (context, i) {
+                                  final msg = presets[i];
+                                  return ActionChip(
+                                    label: Text(msg, style: const TextStyle(fontSize: 11.5, color: AppColors.ink)),
+                                    backgroundColor: AppColors.paper,
+                                    onPressed: () => sendMessage(msg),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    controller: textController,
+                                    textInputAction: TextInputAction.send,
+                                    onSubmitted: sendMessage,
+                                    decoration: InputDecoration(
+                                      hintText: 'Type message to $driverName...',
+                                      isDense: true,
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(color: AppColors.line),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.navy,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                  onPressed: () => sendMessage(textController.text),
+                                  child: const Icon(Icons.send, size: 18),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
     );
   }
 }

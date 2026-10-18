@@ -27,6 +27,8 @@ class ApiEndpoints {
   static const String syncRealtimeState = '/api/method/mobility.api.ride.sync_realtime_state';
   static const String getRideLocationEvents = '/api/method/mobility.api.ride.get_ride_location_events';
   static const String getRideStatusLogs = '/api/method/mobility.api.ride.get_ride_status_logs';
+  static const String sendRideMessage = '/api/method/mobility.api.ride.send_ride_message';
+  static const String getRideMessages = '/api/method/mobility.api.ride.get_ride_messages';
 
   // Payment Recording & Confirmation
   static const String createPayment = '/api/method/mobility.api.payment.create_payment';

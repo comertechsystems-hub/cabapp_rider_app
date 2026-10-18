@@ -26,6 +26,7 @@ class ActiveRide {
   final double? driverLng;
   final double? driverEtaMins;
   final double? driverDistanceKm;
+  final List<Map<String, dynamic>> chatMessages;
   final DateTime? createdAt;
 
   const ActiveRide({
@@ -53,6 +54,7 @@ class ActiveRide {
     this.driverLng,
     this.driverEtaMins,
     this.driverDistanceKm,
+    this.chatMessages = const [],
     this.createdAt,
   });
 

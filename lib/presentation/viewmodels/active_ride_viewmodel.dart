@@ -47,6 +47,22 @@ class ActiveRideViewModel extends ChangeNotifier with ViewStateMixin {
 
   DriverDetails? get driverDetails => _currentRide?.driverDetails;
   String? get startOtp => _currentRide?.startOtp;
+  List<Map<String, dynamic>> get chatMessages => _currentRide?.chatMessages ?? const [];
+
+  Future<bool> sendChatMessage(String text, {String? overrideRideId}) async {
+    final targetId = overrideRideId ?? _currentRide?.id;
+    if (targetId == null || text.trim().isEmpty) return false;
+    try {
+      final repo = rideRepo;
+      if (repo is dynamic) {
+        await (repo as dynamic).sendRideMessage(targetId, text.trim());
+      }
+      await refreshActiveRide();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
 
   void clearJustAccepted() {
     _justAcceptedRide = null;

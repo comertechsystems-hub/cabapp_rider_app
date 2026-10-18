@@ -323,8 +323,17 @@ class _DriverArrivingScreenState extends State<DriverArrivingScreen> {
                       Expanded(
                         child: OutlinedButton.icon(
                           icon: const Icon(Icons.message, size: 18, color: AppColors.navy),
-                          label: const Text('Message', style: TextStyle(color: AppColors.navy)),
-                          onPressed: () => _showQuickMessageModal(context, driver?.name ?? ride?.driverName ?? 'Driver'),
+                          label: Text(
+                            (ride?.chatMessages.isNotEmpty ?? false)
+                                ? 'Message (${ride!.chatMessages.length})'
+                                : 'Message',
+                            style: const TextStyle(color: AppColors.navy),
+                          ),
+                          onPressed: () => _showQuickMessageModal(
+                            context,
+                            activeVm,
+                            driver?.name ?? ride?.driverName ?? 'Driver',
+                          ),
                         ),
                       ),
                     ],
@@ -356,7 +365,12 @@ class _DriverArrivingScreenState extends State<DriverArrivingScreen> {
     );
   }
 
-  void _showQuickMessageModal(BuildContext context, String driverName) {
+  void _showQuickMessageModal(
+    BuildContext context,
+    ActiveRideViewModel activeVm,
+    String driverName,
+  ) {
+    final textController = TextEditingController();
     final presets = [
       "I'm waiting at the pickup spot.",
       "I'll be right out in 1 minute.",
@@ -365,36 +379,106 @@ class _DriverArrivingScreenState extends State<DriverArrivingScreen> {
     ];
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: AppColors.paperRaised,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Quick Message to $driverName',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.ink),
-              ),
-              const SizedBox(height: 12),
-              ...presets.map(
-                (msg) => ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.chat_bubble_outline, color: AppColors.navy, size: 20),
-                  title: Text(msg, style: const TextStyle(fontSize: 13.5, color: AppColors.ink)),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Opening chat with driver · Sent: "$msg"')),
-                    );
-                  },
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Quick Message to $driverName',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.ink),
                 ),
-              ),
-            ],
+                const SizedBox(height: 10),
+                if (activeVm.chatMessages.isNotEmpty) ...[
+                  Container(
+                    constraints: const BoxConstraints(maxHeight: 140),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.paper,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.line),
+                    ),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: activeVm.chatMessages.length,
+                      itemBuilder: (context, idx) {
+                        final m = activeVm.chatMessages[idx];
+                        final isRider = m['sender_role'] == 'RIDER';
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 3),
+                          child: Text(
+                            '${isRider ? "You" : driverName}: ${m['message'] ?? ""}',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: isRider ? FontWeight.w500 : FontWeight.bold,
+                              color: isRider ? AppColors.inkSoft : AppColors.navy,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
+                ...presets.map(
+                  (msg) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    leading: const Icon(Icons.chat_bubble_outline, color: AppColors.navy, size: 20),
+                    title: Text(msg, style: const TextStyle(fontSize: 13.5, color: AppColors.ink)),
+                    onTap: () {
+                      activeVm.sendChatMessage(msg);
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Opening chat with driver · Sent: "$msg"')),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: textController,
+                        decoration: InputDecoration(
+                          hintText: 'Write a message to $driverName...',
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.navy,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: () {
+                        final msg = textController.text.trim();
+                        if (msg.isEmpty) return;
+                        activeVm.sendChatMessage(msg);
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Opening chat with driver · Sent: "$msg"')),
+                        );
+                      },
+                      child: const Icon(Icons.send, size: 18),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -173,8 +173,12 @@ class PollingRealtimeService implements IRealtimeService {
       );
 
       final data = res is Map<String, dynamic> ? res : <String, dynamic>{};
-      if (data.containsKey('ride')) {
-        final ride = RideModel.fromJson(data['ride']);
+      if (data.containsKey('ride') && data['ride'] is Map) {
+        final rideMap = Map<String, dynamic>.from(data['ride'] as Map);
+        if (data['chat_messages'] is List && rideMap['chat_messages'] == null) {
+          rideMap['chat_messages'] = data['chat_messages'];
+        }
+        final ride = RideModel.fromJson(rideMap);
         _rideUpdateController.add(ride);
       }
 

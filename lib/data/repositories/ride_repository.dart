@@ -103,8 +103,48 @@ class RideRepository implements IRideRepository {
       queryParams: {'ride_id': rideId},
     );
     final data = res['data'] ?? res;
-    final rideData = data['authoritative_state'] ?? data['ride'] ?? data;
-    return RideModel.fromJson(rideData);
+    final rawRideData = data['authoritative_state'] ?? data['ride'] ?? data;
+    final rideMap = rawRideData is Map<String, dynamic>
+        ? Map<String, dynamic>.from(rawRideData)
+        : <String, dynamic>{};
+    if (data is Map && data['chat_messages'] is List && rideMap['chat_messages'] == null) {
+      rideMap['chat_messages'] = data['chat_messages'];
+    }
+    return RideModel.fromJson(rideMap);
+  }
+
+  Future<List<Map<String, dynamic>>> sendRideMessage(String rideId, String message) async {
+    final res = await apiClient.post(
+      ApiEndpoints.sendRideMessage,
+      body: {
+        'ride_id': rideId,
+        'message': message,
+        'sender_role': 'RIDER',
+      },
+    );
+    final data = res is Map ? (res['data'] ?? res) : res;
+    if (data is Map && data['chat_messages'] is List) {
+      return (data['chat_messages'] as List)
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    }
+    return [];
+  }
+
+  Future<List<Map<String, dynamic>>> getRideMessages(String rideId) async {
+    final res = await apiClient.get(
+      ApiEndpoints.getRideMessages,
+      queryParams: {'ride_id': rideId},
+    );
+    final data = res is Map ? (res['data'] ?? res) : res;
+    if (data is Map && data['chat_messages'] is List) {
+      return (data['chat_messages'] as List)
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    }
+    return [];
   }
 
   @override

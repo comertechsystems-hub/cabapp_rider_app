@@ -246,6 +246,7 @@ class RideViewModel extends ChangeNotifier with ViewStateMixin {
               driverName: updated.driverDetails?.name,
               driverPhone: updated.driverDetails?.phoneNumber,
               vehicle: updated.driverDetails?.licensePlate,
+              chatMessages: updated.chatMessages,
             );
 
       if (_currentRide!.isCompleted) {
@@ -253,6 +254,17 @@ class RideViewModel extends ChangeNotifier with ViewStateMixin {
       }
       notifyListeners();
     } catch (_) {}
+  }
+
+  Future<bool> sendChatMessage(String text) async {
+    if (_currentRide == null || text.trim().isEmpty) return false;
+    try {
+      await (_rideRepo as dynamic).sendRideMessage(_currentRide!.id, text.trim());
+      await refreshActiveRide();
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<bool> cancelRide(String reason) async {
