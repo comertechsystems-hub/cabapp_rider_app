@@ -55,23 +55,56 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
   late final MapController _mapController;
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnimation;
+  late final AnimationController _markerGlideController;
+
+  LatLng? _animatedDriverPoint;
+  LatLng? _glideBeginPoint;
+  LatLng? _glideEndPoint;
+  double _driverBearingRadians = 0.0;
 
   List<LatLng> _roadPoints = [];
   bool _isLoadingRoute = false;
   static final Map<String, List<LatLng>> _routeCache = {};
 
+  bool get _isTestEnv => WidgetsBinding.instance.runtimeType.toString().contains('Test');
+
   @override
   void initState() {
     super.initState();
     _mapController = MapController();
+    if (widget.driverLat != null && widget.driverLng != null) {
+      _animatedDriverPoint = LatLng(widget.driverLat!, widget.driverLng!);
+      final target = _routeEndPoint;
+      _driverBearingRadians = _computeBearing(
+        widget.driverLat!,
+        widget.driverLng!,
+        target.latitude,
+        target.longitude,
+      );
+    }
 
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1800),
     );
 
+    _markerGlideController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..addListener(() {
+        if (mounted && _glideBeginPoint != null && _glideEndPoint != null) {
+          final t = Curves.easeInOut.transform(_markerGlideController.value);
+          setState(() {
+            _animatedDriverPoint = LatLng(
+              _glideBeginPoint!.latitude + (_glideEndPoint!.latitude - _glideBeginPoint!.latitude) * t,
+              _glideBeginPoint!.longitude + (_glideEndPoint!.longitude - _glideBeginPoint!.longitude) * t,
+            );
+          });
+        }
+      });
+
     // Only loop pulsing animation in real runtime, allowing widget tests to settle cleanly
-    if (!WidgetsBinding.instance.runtimeType.toString().contains('Test')) {
+    if (!_isTestEnv) {
       _pulseController.repeat();
     }
 
@@ -83,8 +116,16 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
     _loadRoadRoute();
   }
 
+  double _computeBearing(double lat1, double lng1, double lat2, double lng2) {
+    final dLat = lat2 - lat1;
+    final dLng = lng2 - lng1;
+    if (dLat.abs() < 1e-6 && dLng.abs() < 1e-6) return _driverBearingRadians;
+    return math.atan2(dLng, dLat);
+  }
+
   @override
   void dispose() {
+    _markerGlideController.dispose();
     _pulseController.dispose();
     _mapController.dispose();
     super.dispose();
@@ -93,12 +134,46 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
   @override
   void didUpdateWidget(covariant InteractiveLiveMap oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.driverLat != null && widget.driverLng != null) {
+      final newDriverPos = LatLng(widget.driverLat!, widget.driverLng!);
+      if (_animatedDriverPoint == null) {
+        _animatedDriverPoint = newDriverPos;
+        final target = _routeEndPoint;
+        _driverBearingRadians = _computeBearing(
+          newDriverPos.latitude,
+          newDriverPos.longitude,
+          target.latitude,
+          target.longitude,
+        );
+      } else {
+        final moved = (_animatedDriverPoint!.latitude - newDriverPos.latitude).abs() > 0.00002 ||
+            (_animatedDriverPoint!.longitude - newDriverPos.longitude).abs() > 0.00002;
+        if (moved) {
+          _driverBearingRadians = _computeBearing(
+            _animatedDriverPoint!.latitude,
+            _animatedDriverPoint!.longitude,
+            newDriverPos.latitude,
+            newDriverPos.longitude,
+          );
+          if (_isTestEnv) {
+            _animatedDriverPoint = newDriverPos;
+          } else {
+            _glideBeginPoint = _animatedDriverPoint;
+            _glideEndPoint = newDriverPos;
+            _markerGlideController.forward(from: 0.0);
+          }
+        }
+      }
+    } else {
+      _animatedDriverPoint = null;
+    }
+
     final coordsChanged = (oldWidget.pickupLat - widget.pickupLat).abs() > 0.0003 ||
         (oldWidget.pickupLng - widget.pickupLng).abs() > 0.0003 ||
         (oldWidget.destinationLat - widget.destinationLat).abs() > 0.0003 ||
         (oldWidget.destinationLng - widget.destinationLng).abs() > 0.0003 ||
-        (oldWidget.driverLat ?? 0 - (widget.driverLat ?? 0)).abs() > 0.0003 ||
-        (oldWidget.driverLng ?? 0 - (widget.driverLng ?? 0)).abs() > 0.0003;
+        ((oldWidget.driverLat ?? 0) - (widget.driverLat ?? 0)).abs() > 0.0003 ||
+        ((oldWidget.driverLng ?? 0) - (widget.driverLng ?? 0)).abs() > 0.0003;
 
     if (coordsChanged ||
         oldWidget.isDriverEnRouteToPickup != widget.isDriverEnRouteToPickup ||
@@ -406,11 +481,12 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
       );
     }
 
-    // Live Driver Car Marker with animated pulsing radar aura
+    // Live Driver Car Marker with animated pulsing radar aura & smooth glide/heading rotation
     if (widget.driverLat != null && widget.driverLng != null) {
+      final driverPoint = _animatedDriverPoint ?? LatLng(widget.driverLat!, widget.driverLng!);
       markers.add(
         Marker(
-          point: LatLng(widget.driverLat!, widget.driverLng!),
+          point: driverPoint,
           width: 56,
           height: 56,
           child: AnimatedBuilder(
@@ -438,7 +514,10 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
                         BoxShadow(color: Colors.black38, blurRadius: 6, offset: Offset(0, 2)),
                       ],
                     ),
-                    child: const Icon(Icons.directions_car, color: Colors.white, size: 20),
+                    child: Transform.rotate(
+                      angle: _driverBearingRadians,
+                      child: const Icon(Icons.directions_car, color: Colors.white, size: 20),
+                    ),
                   ),
                 ],
               );

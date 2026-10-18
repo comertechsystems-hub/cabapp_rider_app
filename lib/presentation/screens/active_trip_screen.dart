@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/constants/app_colors.dart';
@@ -161,8 +162,12 @@ class _ActiveTripScreenState extends State<ActiveTripScreen> {
           IconButton(
             icon: const Icon(Icons.share, color: AppColors.navy),
             tooltip: 'Share Trip',
-            onPressed: () {
+            onPressed: () async {
               final trackUrl = 'https://cabapp.com.ng/track?id=${ride?.id ?? ""}';
+              final shareText =
+                  'CabApp Live Trip: Riding with ${driver?.name ?? ride?.driverName ?? "Babatunde A."} (${driver?.vehicleDescription ?? "Toyota Corolla"} · ${driver?.licensePlate ?? "KJA 442 XL"}). Track live: $trackUrl';
+              await Clipboard.setData(ClipboardData(text: shareText));
+              if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text('Live trip link copied: $trackUrl'),
@@ -375,9 +380,12 @@ class _ActiveTripScreenState extends State<ActiveTripScreen> {
                     width: double.infinity,
                     height: 46,
                     child: OutlinedButton(
-                      onPressed: () {
+                      onPressed: () async {
+                        final phone = driver?.phoneNumber ?? '+2348000000000';
+                        await Clipboard.setData(ClipboardData(text: phone));
+                        if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Calling driver: ${driver?.phoneNumber ?? "+2348000000000"}')),
+                          SnackBar(content: Text('Calling driver: $phone')),
                         );
                       },
                       style: OutlinedButton.styleFrom(

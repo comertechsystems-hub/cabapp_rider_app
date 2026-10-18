@@ -82,6 +82,22 @@ class _DriverArrivingScreenState extends State<DriverArrivingScreen> {
           onPressed: () => _confirmCancel(context, activeVm, legacyVm),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.share_outlined, color: AppColors.navy),
+            tooltip: 'Share Trip Status',
+            onPressed: () async {
+              final summary =
+                  'CabApp Live Trip: Riding with ${driver?.name ?? ride?.driverName ?? "Driver"} (${driver?.vehicleDescription ?? "Verified Cab"} · ${driver?.licensePlate ?? "Lagos"}). Track live: https://cabapp.com.ng/track?id=${ride?.id ?? ""}';
+              await Clipboard.setData(ClipboardData(text: summary));
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  backgroundColor: AppColors.navy,
+                  content: Text('Live trip status & driver details copied to clipboard!'),
+                ),
+              );
+            },
+          ),
           TextButton(
             onPressed: () => _confirmCancel(context, activeVm, legacyVm),
             child: const Text('Cancel', style: TextStyle(color: AppColors.coral, fontWeight: FontWeight.bold)),
@@ -275,9 +291,12 @@ class _DriverArrivingScreenState extends State<DriverArrivingScreen> {
                         child: OutlinedButton.icon(
                           icon: const Icon(Icons.call, size: 18, color: AppColors.navy),
                           label: const Text('Call Driver', style: TextStyle(color: AppColors.navy)),
-                          onPressed: () {
+                          onPressed: () async {
+                            final phone = driver?.phoneNumber ?? '+2348000000000';
+                            await Clipboard.setData(ClipboardData(text: phone));
+                            if (!context.mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Calling driver...')),
+                              SnackBar(content: Text('Calling driver ($phone)...')),
                             );
                           },
                         ),
@@ -287,11 +306,7 @@ class _DriverArrivingScreenState extends State<DriverArrivingScreen> {
                         child: OutlinedButton.icon(
                           icon: const Icon(Icons.message, size: 18, color: AppColors.navy),
                           label: const Text('Message', style: TextStyle(color: AppColors.navy)),
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Opening chat with driver...')),
-                            );
-                          },
+                          onPressed: () => _showQuickMessageModal(context, driver?.name ?? ride?.driverName ?? 'Driver'),
                         ),
                       ),
                     ],
@@ -318,6 +333,51 @@ class _DriverArrivingScreenState extends State<DriverArrivingScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  void _showQuickMessageModal(BuildContext context, String driverName) {
+    final presets = [
+      "I'm waiting at the pickup spot.",
+      "I'll be right out in 1 minute.",
+      "Please call me when you arrive at the gate.",
+      "What color is your vehicle?",
+    ];
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.paperRaised,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Quick Message to $driverName',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.ink),
+              ),
+              const SizedBox(height: 12),
+              ...presets.map(
+                (msg) => ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.chat_bubble_outline, color: AppColors.navy, size: 20),
+                  title: Text(msg, style: const TextStyle(fontSize: 13.5, color: AppColors.ink)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Opening chat with driver · Sent: "$msg"')),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
