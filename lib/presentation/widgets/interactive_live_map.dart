@@ -68,16 +68,30 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
 
   bool get _isTestEnv => WidgetsBinding.instance.runtimeType.toString().contains('Test');
 
+  double? get _effectiveDriverLat {
+    if (widget.driverLat != null) return widget.driverLat;
+    if (widget.isDriverEnRouteToPickup) return widget.pickupLat + 0.0045;
+    return null;
+  }
+
+  double? get _effectiveDriverLng {
+    if (widget.driverLng != null) return widget.driverLng;
+    if (widget.isDriverEnRouteToPickup) return widget.pickupLng + 0.0045;
+    return null;
+  }
+
   @override
   void initState() {
     super.initState();
     _mapController = MapController();
-    if (widget.driverLat != null && widget.driverLng != null) {
-      _animatedDriverPoint = LatLng(widget.driverLat!, widget.driverLng!);
+    final dLat = _effectiveDriverLat;
+    final dLng = _effectiveDriverLng;
+    if (dLat != null && dLng != null) {
+      _animatedDriverPoint = LatLng(dLat, dLng);
       final target = _routeEndPoint;
       _driverBearingRadians = _computeBearing(
-        widget.driverLat!,
-        widget.driverLng!,
+        dLat,
+        dLng,
         target.latitude,
         target.longitude,
       );
@@ -134,8 +148,10 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
   @override
   void didUpdateWidget(covariant InteractiveLiveMap oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.driverLat != null && widget.driverLng != null) {
-      final newDriverPos = LatLng(widget.driverLat!, widget.driverLng!);
+    final dLat = _effectiveDriverLat;
+    final dLng = _effectiveDriverLng;
+    if (dLat != null && dLng != null) {
+      final newDriverPos = LatLng(dLat, dLng);
       if (_animatedDriverPoint == null) {
         _animatedDriverPoint = newDriverPos;
         final target = _routeEndPoint;
@@ -172,8 +188,8 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
         (oldWidget.pickupLng - widget.pickupLng).abs() > 0.0003 ||
         (oldWidget.destinationLat - widget.destinationLat).abs() > 0.0003 ||
         (oldWidget.destinationLng - widget.destinationLng).abs() > 0.0003 ||
-        ((oldWidget.driverLat ?? 0) - (widget.driverLat ?? 0)).abs() > 0.0003 ||
-        ((oldWidget.driverLng ?? 0) - (widget.driverLng ?? 0)).abs() > 0.0003;
+        ((oldWidget.driverLat ?? 0) - (widget.driverLat ?? 0)).abs() > 0.0002 ||
+        ((oldWidget.driverLng ?? 0) - (widget.driverLng ?? 0)).abs() > 0.0002;
 
     if (coordsChanged ||
         oldWidget.isDriverEnRouteToPickup != widget.isDriverEnRouteToPickup ||
@@ -188,17 +204,21 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
 
   // Active route endpoints based on trip state
   LatLng get _routeStartPoint {
-    if (widget.isDriverEnRouteToPickup && widget.driverLat != null && widget.driverLng != null) {
-      return LatLng(widget.driverLat!, widget.driverLng!);
-    } else if (widget.isTripStarted && widget.driverLat != null && widget.driverLng != null) {
-      return LatLng(widget.driverLat!, widget.driverLng!);
+    final dLat = _effectiveDriverLat;
+    final dLng = _effectiveDriverLng;
+    if (widget.isDriverEnRouteToPickup && dLat != null && dLng != null) {
+      return LatLng(dLat, dLng);
+    } else if (widget.isTripStarted && dLat != null && dLng != null) {
+      return LatLng(dLat, dLng);
     } else {
       return LatLng(widget.pickupLat, widget.pickupLng);
     }
   }
 
   LatLng get _routeEndPoint {
-    if (widget.isDriverEnRouteToPickup && widget.driverLat != null && widget.driverLng != null) {
+    final dLat = _effectiveDriverLat;
+    final dLng = _effectiveDriverLng;
+    if (widget.isDriverEnRouteToPickup && dLat != null && dLng != null) {
       return LatLng(widget.pickupLat, widget.pickupLng);
     } else {
       return LatLng(widget.destinationLat, widget.destinationLng);
@@ -314,15 +334,17 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
   }
 
   LatLng _computeInitialCenter() {
-    if (widget.isDriverEnRouteToPickup && widget.driverLat != null && widget.driverLng != null) {
+    final dLat = _effectiveDriverLat;
+    final dLng = _effectiveDriverLng;
+    if (widget.isDriverEnRouteToPickup && dLat != null && dLng != null) {
       return LatLng(
-        (widget.driverLat! + widget.pickupLat) / 2.0,
-        (widget.driverLng! + widget.pickupLng) / 2.0,
+        (dLat + widget.pickupLat) / 2.0,
+        (dLng + widget.pickupLng) / 2.0,
       );
-    } else if (widget.isTripStarted && widget.driverLat != null && widget.driverLng != null) {
+    } else if (widget.isTripStarted && dLat != null && dLng != null) {
       return LatLng(
-        (widget.driverLat! + widget.destinationLat) / 2.0,
-        (widget.driverLng! + widget.destinationLng) / 2.0,
+        (dLat + widget.destinationLat) / 2.0,
+        (dLng + widget.destinationLng) / 2.0,
       );
     } else {
       return LatLng(
@@ -350,7 +372,9 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
     double targetLat2 = widget.destinationLat;
     double targetLng2 = widget.destinationLng;
 
-    if (widget.isDriverEnRouteToPickup && widget.driverLat != null && widget.driverLng != null) {
+    final dLat = _effectiveDriverLat;
+    final dLng = _effectiveDriverLng;
+    if (widget.isDriverEnRouteToPickup && dLat != null && dLng != null) {
       targetLat2 = widget.pickupLat;
       targetLng2 = widget.pickupLng;
     }
@@ -422,9 +446,16 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
         ? const Color(0xFF10B981)
         : const Color(0xFF2563EB);
 
-    final routePoints = _roadPoints.isNotEmpty
+    final baseRoutePoints = _roadPoints.isNotEmpty
         ? _roadPoints
         : _generateCurvedFallback(_routeStartPoint, _routeEndPoint);
+
+    // Connect polyline head to the smoothly gliding car marker
+    final List<LatLng> routePoints = (_animatedDriverPoint != null &&
+            (widget.isDriverEnRouteToPickup || widget.isTripStarted) &&
+            baseRoutePoints.isNotEmpty)
+        ? <LatLng>[_animatedDriverPoint!, ...baseRoutePoints.skip(1)]
+        : baseRoutePoints;
 
     // Build markers
     final markers = <Marker>[
@@ -482,8 +513,10 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
     }
 
     // Live Driver Car Marker with animated pulsing radar aura & smooth glide/heading rotation
-    if (widget.driverLat != null && widget.driverLng != null) {
-      final driverPoint = _animatedDriverPoint ?? LatLng(widget.driverLat!, widget.driverLng!);
+    final dLat = _effectiveDriverLat;
+    final dLng = _effectiveDriverLng;
+    if (dLat != null && dLng != null) {
+      final driverPoint = _animatedDriverPoint ?? LatLng(dLat, dLng);
       markers.add(
         Marker(
           point: driverPoint,

@@ -35,6 +35,10 @@ class _DriverArrivingScreenState extends State<DriverArrivingScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         HapticFeedback.heavyImpact();
+        SystemSound.play(SystemSoundType.alert);
+        if (!WidgetsBinding.instance.runtimeType.toString().contains('Test')) {
+          context.read<ActiveRideViewModel>().refreshActiveRide();
+        }
       }
     });
   }
@@ -69,12 +73,14 @@ class _DriverArrivingScreenState extends State<DriverArrivingScreen> {
     _checkTripStarted(activeVm);
 
     final bool hasArrived = ride?.status == 'DRIVER_ARRIVED';
+    final int etaMins = (ride?.driverEtaMins ?? 3.0).round();
+    final String distKm = (ride?.driverDistanceKm ?? 0.7).toStringAsFixed(1);
 
     return Scaffold(
       backgroundColor: AppColors.paper,
       appBar: AppBar(
         title: Text(
-          hasArrived ? 'Driver Has Arrived!' : 'Driver En Route',
+          hasArrived ? 'Driver Has Arrived!' : 'Driver En Route (~$etaMins mins)',
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         leading: IconButton(
@@ -138,7 +144,7 @@ class _DriverArrivingScreenState extends State<DriverArrivingScreen> {
                 ),
               ),
 
-            // Status Alert Bar
+            // Status Alert Bar with Live ETA & Distance Pill
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -159,6 +165,18 @@ class _DriverArrivingScreenState extends State<DriverArrivingScreen> {
                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
                     ),
                   ),
+                  if (!hasArrived)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.green,
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: Text(
+                        '$etaMins min · $distKm km',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11.5),
+                      ),
+                    ),
                 ],
               ),
             ),

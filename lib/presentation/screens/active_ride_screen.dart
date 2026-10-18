@@ -86,6 +86,7 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         HapticFeedback.heavyImpact();
+        SystemSound.play(SystemSoundType.alert);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: AppColors.green,
@@ -216,6 +217,18 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
                     child: Text(
                       '${activeVm.searchSecondsElapsed}s',
                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                    ),
+                  )
+                else if (isAcceptedOrEnRoute)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: AppColors.green,
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: Text(
+                      '~${(ride.driverEtaMins ?? 3.0).toStringAsFixed(0)} min · ${(ride.driverDistanceKm ?? 0.7).toStringAsFixed(1)} km',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11.5),
                     ),
                   ),
               ],

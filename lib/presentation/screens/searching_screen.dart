@@ -61,13 +61,6 @@ class _SearchingScreenState extends State<SearchingScreen> with SingleTickerProv
             Navigator.pushReplacementNamed(context, AppRoutes.driverArriving);
           }
         });
-      } else if (ride.hasDriver || activeVm.isDriverAssigned) {
-        _hasNavigated = true;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            Navigator.pushReplacementNamed(context, AppRoutes.driverAssigned);
-          }
-        });
       }
     }
   }
@@ -173,21 +166,25 @@ class _SearchingScreenState extends State<SearchingScreen> with SingleTickerProv
               ),
               const SizedBox(height: 24),
 
-              const Text(
-                'Connecting with Drivers...',
-                style: TextStyle(
+              Text(
+                (ride?.isDriverAssigned == true)
+                    ? 'Driver Found · Awaiting Acceptance...'
+                    : 'Connecting with Drivers...',
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: AppColors.ink,
                 ),
               ),
               const SizedBox(height: 6),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20.0),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
                 child: Text(
-                  'Matching you with a verified driver nearby. This usually takes under a minute.',
+                  (ride?.isDriverAssigned == true)
+                      ? 'We have sent your ride request to a nearby driver. Waiting for driver confirmation...'
+                      : 'Matching you with a verified driver nearby. This usually takes under a minute.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13, color: AppColors.inkSoft, height: 1.4),
+                  style: const TextStyle(fontSize: 13, color: AppColors.inkSoft, height: 1.4),
                 ),
               ),
               const SizedBox(height: 16),
