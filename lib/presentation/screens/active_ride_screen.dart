@@ -213,7 +213,7 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               color: ride.isCompleted
                   ? AppColors.greenSoft
-                  : (ride.isInProgress ? AppColors.navySoft : AppColors.navy),
+                  : (ride.isInProgress ? const Color(0xFF1E3A8A) : AppColors.navy),
               child: Row(
                 children: [
                   Icon(
@@ -257,15 +257,15 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
                         style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                       ),
                     )
-                  else if (isAcceptedOrEnRoute)
+                  else if (isAcceptedOrEnRoute || ride.isInProgress)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: AppColors.green,
+                        color: ride.isInProgress ? Colors.white24 : AppColors.green,
                         borderRadius: BorderRadius.circular(100),
                       ),
                       child: Text(
-                        '~${(ride.driverEtaMins ?? 3.0).toStringAsFixed(0)} min · ${(ride.driverDistanceKm ?? 0.7).toStringAsFixed(1)} km',
+                        '~${(ride.driverEtaMins ?? (ride.isInProgress ? 12.0 : 3.0)).toStringAsFixed(0)} min · ${(ride.driverDistanceKm ?? (ride.isInProgress ? 4.5 : 0.7)).toStringAsFixed(1)} km',
                         style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11.5),
                       ),
                     ),
@@ -291,16 +291,55 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
                     driverDistanceKm: ride.driverDistanceKm,
                     driverName: driver?.name ?? ride.driverName,
                   ),
-                  // Emergency SOS Button (visible during active trip)
+                  // Emergency SOS Button (docked at bottom-left so it never overlaps the top "Heading to Destination" pill)
                   if (ride.isInProgress)
                     Positioned(
-                      top: 16,
-                      right: 16,
-                      child: FloatingActionButton.extended(
-                        backgroundColor: AppColors.coral,
-                        icon: const Icon(Icons.warning, color: Colors.white),
-                        label: const Text('EMERGENCY SOS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-                        onPressed: () => _triggerSos(context, ride.id),
+                      bottom: 14,
+                      left: 14,
+                      child: Material(
+                        color: Colors.transparent,
+                        elevation: 5,
+                        shadowColor: AppColors.coral.withValues(alpha: 0.45),
+                        borderRadius: BorderRadius.circular(100),
+                        child: InkWell(
+                          onTap: () => _triggerSos(context, ride.id),
+                          borderRadius: BorderRadius.circular(100),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFD92D20), AppColors.coral],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(100),
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.9), width: 1.2),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.shield_outlined, color: Colors.white, size: 14),
+                                ),
+                                const SizedBox(width: 6),
+                                const Text(
+                                  'EMERGENCY SOS',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 11,
+                                    letterSpacing: 0.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                 ],
@@ -747,14 +786,79 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Trigger Emergency SOS?', style: TextStyle(color: AppColors.coral)),
-        content: const Text(
-          'This will immediately alert our 24/7 Operations Desk and notify your emergency contacts with your live GPS location.',
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.coralSoft,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.shield, color: AppColors.coral, size: 22),
+            ),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text(
+                'Trigger Emergency SOS?',
+                style: TextStyle(color: AppColors.coral, fontWeight: FontWeight.bold, fontSize: 17),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'This will immediately alert our 24/7 Operations Desk and notify your emergency contacts with your live GPS location.',
+              style: TextStyle(fontSize: 13.5, color: AppColors.ink),
+            ),
+            const SizedBox(height: 14),
+            InkWell(
+              onTap: () async {
+                await Clipboard.setData(const ClipboardData(text: '112'));
+                if (ctx.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Nigeria Emergency Number (112 / 767) copied to dialer')),
+                  );
+                }
+              },
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.paper,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.line),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.phone_in_talk, color: AppColors.coral, size: 18),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('National Emergency Line: 112 / 767', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+                          Text('Tap to copy emergency number', style: TextStyle(fontSize: 11, color: AppColors.inkSoft)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.coral),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.coral,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
             onPressed: () async {
               Navigator.pop(ctx);
               final supportVm = context.read<SupportViewModel>();
@@ -768,7 +872,7 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
                 );
               }
             },
-            child: const Text('SEND SOS NOW'),
+            child: const Text('SEND SOS NOW', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),

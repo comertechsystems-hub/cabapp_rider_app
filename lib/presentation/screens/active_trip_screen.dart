@@ -205,19 +205,53 @@ class _ActiveTripScreenState extends State<ActiveTripScreen> {
                       driverDistanceKm: ride?.driverDistanceKm,
                       driverName: driver?.name ?? ride?.driverName,
                     ),
-                    // Floating SOS Button in top-right corner
+                    // Floating SOS Pill at bottom-left (clear of top "Heading to Destination" banner)
                     Positioned(
-                      top: 12,
-                      right: 12,
-                      child: ElevatedButton.icon(
-                        onPressed: () => _triggerSos(context, ride?.id),
-                        icon: const Icon(Icons.shield, size: 16, color: Colors.white),
-                        label: const Text('EMERGENCY SOS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.coral,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      bottom: 14,
+                      left: 14,
+                      child: Material(
+                        color: Colors.transparent,
+                        elevation: 5,
+                        shadowColor: AppColors.coral.withValues(alpha: 0.45),
+                        borderRadius: BorderRadius.circular(100),
+                        child: InkWell(
+                          onTap: () => _triggerSos(context, ride?.id),
+                          borderRadius: BorderRadius.circular(100),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFD92D20), AppColors.coral],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(100),
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.9), width: 1.2),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.shield_outlined, color: Colors.white, size: 14),
+                                ),
+                                const SizedBox(width: 6),
+                                const Text(
+                                  'EMERGENCY SOS',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 11,
+                                    letterSpacing: 0.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -362,7 +396,7 @@ class _ActiveTripScreenState extends State<ActiveTripScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '₦${(ride?.totalFare ?? 5600).toStringAsFixed(0)}',
+                                '₦${(ride?.displayFare ?? 5600).toStringAsFixed(0)}',
                                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.ink),
                               ),
                               const SizedBox(height: 2),

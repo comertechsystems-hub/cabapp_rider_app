@@ -79,6 +79,15 @@ class RideModel extends ActiveRide {
         ? rawChat.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
         : const [];
 
+    final statusStr = (json['status'] ?? 'REQUESTED').toString();
+    final parsedTotal = (json['total_fare'] as num?)?.toDouble() ??
+        (json['estimated_fare'] as num?)?.toDouble() ??
+        0.0;
+    final rawFinal = (json['final_fare'] as num?)?.toDouble();
+    final parsedFinal = statusStr == 'CANCELLED'
+        ? rawFinal
+        : ((rawFinal != null && rawFinal > 0) ? rawFinal : null);
+
     return RideModel(
       id: json['name'] ?? json['id'] ?? '',
       riderId: json['rider'] ?? json['rider_id'] ?? '',
@@ -87,15 +96,15 @@ class RideModel extends ActiveRide {
       driverPhone: json['driver_phone'] ?? driverDetails?.phoneNumber,
       vehicle: json['vehicle'] ?? driverDetails?.licensePlate,
       vehicleCategory: json['vehicle_category'] ?? 'ECONOMY',
-      status: json['status'] ?? 'REQUESTED',
+      status: statusStr,
       pickupAddress: json['pickup_address'] ?? '',
       pickupLat: (json['pickup_lat'] as num?)?.toDouble() ?? 0.0,
       pickupLng: (json['pickup_lng'] as num?)?.toDouble() ?? 0.0,
       destinationAddress: json['destination_address'] ?? '',
       destinationLat: (json['destination_lat'] as num?)?.toDouble() ?? 0.0,
       destinationLng: (json['destination_lng'] as num?)?.toDouble() ?? 0.0,
-      totalFare: (json['total_fare'] as num?)?.toDouble() ?? 0.0,
-      finalFare: (json['final_fare'] as num?)?.toDouble(),
+      totalFare: parsedTotal,
+      finalFare: parsedFinal,
       currency: json['currency'] ?? 'NGN',
       startOtp: json['start_otp']?.toString(),
       paymentMethod: json['payment_method'] ?? 'CASH',

@@ -80,5 +80,9 @@ class ActiveRide {
   bool get isDriverOnTheWay => isDriverAccepted || isDriverEnRoute;
   bool get canCancel => isRequested || isSearching || isDriverAssigned || isDriverAccepted;
 
-  double get displayFare => finalFare ?? totalFare;
+  double get displayFare => isCancelled
+      ? (finalFare ?? 0.0)
+      : ((finalFare != null && finalFare! > 0)
+          ? finalFare!
+          : (totalFare > 0 ? totalFare : 1500.0));
 }

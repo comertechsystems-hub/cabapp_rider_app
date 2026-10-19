@@ -41,6 +41,7 @@ void main() async {
   realtimeService.connect();
 
   final notificationService = NotificationClientService(apiClient: apiClient, sessionManager: sessionManager);
+  notificationService.startLivePushSync();
 
   runApp(
     MultiProvider(

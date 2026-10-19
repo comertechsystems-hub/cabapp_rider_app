@@ -26,6 +26,9 @@ class InteractiveLiveMap extends StatefulWidget {
   final double? driverEtaMins;
   final double? driverDistanceKm;
   final String? driverName;
+  final void Function(double lat, double lng)? onMapTap;
+  final String? mapPinTargetLabel;
+  final VoidCallback? onToggleMapPinTarget;
 
   const InteractiveLiveMap({
     super.key,
@@ -45,6 +48,9 @@ class InteractiveLiveMap extends StatefulWidget {
     this.driverEtaMins,
     this.driverDistanceKm,
     this.driverName,
+    this.onMapTap,
+    this.mapPinTargetLabel,
+    this.onToggleMapPinTarget,
   });
 
   @override
@@ -603,6 +609,11 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
             initialZoom: 14.2,
             minZoom: 4.0,
             maxZoom: 20.0,
+            onTap: (tapPosition, point) {
+              if (widget.onMapTap != null) {
+                widget.onMapTap!(point.latitude, point.longitude);
+              }
+            },
             interactionOptions: const InteractionOptions(
               flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
             ),
@@ -642,6 +653,55 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
             MarkerLayer(markers: markers),
           ],
         ),
+
+        // 1b. Interactive Map Pin Mode Pill (When hailing a ride on HomeMapScreen)
+        if (widget.onMapTap != null && !widget.isDriverEnRouteToPickup && !widget.isTripStarted)
+          Positioned(
+            top: 10,
+            left: 12,
+            right: 12,
+            child: Center(
+              child: GestureDetector(
+                onTap: widget.onToggleMapPinTarget,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.95),
+                    borderRadius: BorderRadius.circular(100),
+                    boxShadow: const [
+                      BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 2)),
+                    ],
+                    border: Border.all(
+                      color: (widget.mapPinTargetLabel == 'Pickup') ? AppColors.navy : AppColors.coral,
+                      width: 1.2,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.touch_app,
+                        size: 14,
+                        color: (widget.mapPinTargetLabel == 'Pickup') ? AppColors.navy : AppColors.coral,
+                      ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          'Tap map to pin ${widget.mapPinTargetLabel ?? "Destination"} · Switch',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.ink,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
 
         // 2. Live Map Guide & ETA Floating Pill
         if (widget.isDriverEnRouteToPickup || widget.isTripStarted)
