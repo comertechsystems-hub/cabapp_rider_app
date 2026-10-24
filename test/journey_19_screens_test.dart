@@ -124,18 +124,18 @@ void main() {
       await tester.pumpWidget(buildApp(const LoginScreen()));
       await tester.pump();
 
-      expect(find.text('Enter your mobile'), findsOneWidget);
-      expect(find.text('+234'), findsOneWidget);
-      expect(find.text('Send Code'), findsOneWidget);
+      expect(find.text('Sign In'), findsOneWidget);
+      expect(find.text('Create Account'), findsOneWidget);
+      expect(find.text('Continue'), findsOneWidget);
     });
 
     testWidgets('Screen 3 (OTP) renders pin verification and resend countdown', (tester) async {
       await tester.pumpWidget(buildApp(const OtpScreen(phoneNumber: '+2348012345678')));
       await tester.pump();
 
-      expect(find.text('Verify Phone'), findsOneWidget);
+      expect(find.text('Verify Account'), findsOneWidget);
       expect(find.textContaining('+2348012345678'), findsOneWidget);
-      expect(find.text('Verify & Continue'), findsOneWidget);
+      expect(find.text('Confirm & Continue'), findsOneWidget);
       expect(find.textContaining('Resend code in'), findsOneWidget);
     });
 

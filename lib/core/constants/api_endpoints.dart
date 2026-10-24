@@ -7,6 +7,8 @@ class ApiEndpoints {
   // Auth Endpoints
   static const String requestOtp = '/api/method/mobility.api.auth.request_otp';
   static const String verifyOtp = '/api/method/mobility.api.auth.verify_otp';
+  static const String checkSession = '/api/method/mobility.api.auth.check_session';
+  static const String logout = '/api/method/mobility.api.auth.logout';
 
   // Rider Profile
   static const String getProfile = '/api/method/mobility.api.rider.get_profile';

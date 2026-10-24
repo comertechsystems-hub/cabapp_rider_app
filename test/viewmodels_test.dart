@@ -31,13 +31,27 @@ class MockAuthRepo implements IAuthRepository {
   bool loggedIn = false;
 
   @override
-  Future<Map<String, dynamic>> requestOtp(String phoneNumber) async {
+  bool get isAuthenticated => loggedIn;
+
+  @override
+  Future<Map<String, dynamic>> requestOtp(
+    String phoneNumber, {
+    String? email,
+    String? fullName,
+  }) async {
     otpRequested = true;
     return {'success': true};
   }
 
   @override
-  Future<RiderProfile> verifyOtp({required String phoneNumber, required String otp}) async {
+  Future<RiderProfile> verifyOtp({
+    required String phoneNumber,
+    required String otp,
+    String? firstName,
+    String? lastName,
+    String? fullName,
+    String? email,
+  }) async {
     loggedIn = true;
     return RiderProfile(
       id: 'RDR-001',

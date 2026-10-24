@@ -16,10 +16,29 @@ class AuthRepository implements IAuthRepository {
   });
 
   @override
-  Future<Map<String, dynamic>> requestOtp(String phoneNumber) async {
+  bool get isAuthenticated => sessionManager.isAuthenticated;
+
+  @override
+  Future<Map<String, dynamic>> requestOtp(
+    String phoneNumber, {
+    String? email,
+    String? fullName,
+  }) async {
+    final body = <String, dynamic>{
+      'phone': phoneNumber,
+      'role': 'Rider',
+      'device_id': sessionManager.deviceId,
+    };
+    if (email != null && email.trim().isNotEmpty) {
+      body['email'] = email.trim();
+    }
+    if (fullName != null && fullName.trim().isNotEmpty) {
+      body['full_name'] = fullName.trim();
+    }
+
     final res = await apiClient.post(
       ApiEndpoints.requestOtp,
-      body: {'phone': phoneNumber, 'role': 'Rider'},
+      body: body,
     );
     return res is Map<String, dynamic> ? res : {'success': true};
   }
@@ -30,14 +49,27 @@ class AuthRepository implements IAuthRepository {
     required String otp,
     String? firstName,
     String? lastName,
+    String? fullName,
+    String? email,
   }) async {
     final body = <String, dynamic>{
       'phone': phoneNumber,
       'otp': otp,
       'role': 'Rider',
+      'device_id': sessionManager.deviceId,
     };
-    if (firstName != null) body['first_name'] = firstName;
-    if (lastName != null) body['last_name'] = lastName;
+    if (firstName != null && firstName.trim().isNotEmpty) {
+      body['first_name'] = firstName.trim();
+    }
+    if (lastName != null && lastName.trim().isNotEmpty) {
+      body['last_name'] = lastName.trim();
+    }
+    if (fullName != null && fullName.trim().isNotEmpty) {
+      body['full_name'] = fullName.trim();
+    }
+    if (email != null && email.trim().isNotEmpty) {
+      body['email'] = email.trim();
+    }
 
     final res = await apiClient.post(ApiEndpoints.verifyOtp, body: body);
     final data = res['data'] ?? res;
@@ -46,11 +78,14 @@ class AuthRepository implements IAuthRepository {
     final apiSecret = data['api_secret'] ?? '';
     final String userEmail = data['user'] is Map
         ? (data['user']['email']?.toString() ?? '')
-        : (data['user']?.toString() ?? '');
+        : (data['user']?.toString() ?? email ?? '');
     final Map<String, dynamic> profileData = data['profile'] is Map
         ? Map<String, dynamic>.from(data['profile'] as Map)
         : (data is Map<String, dynamic> ? data : <String, dynamic>{});
     final riderId = profileData['name'] ?? profileData['id'] ?? data['domain_profile'] ?? data['rider_id'] ?? '';
+
+    final resolvedName = fullName?.trim() ??
+        '${profileData['first_name'] ?? firstName ?? ''} ${profileData['last_name'] ?? lastName ?? ''}'.trim();
 
     await sessionManager.saveAuthCredentials(
       apiKey: apiKey,
@@ -58,7 +93,7 @@ class AuthRepository implements IAuthRepository {
       userEmail: userEmail,
       riderId: riderId,
       phone: phoneNumber,
-      fullName: '${profileData['first_name'] ?? firstName ?? ''} ${profileData['last_name'] ?? lastName ?? ''}'.trim(),
+      fullName: resolvedName.isNotEmpty ? resolvedName : 'Rider',
     );
 
     return RiderProfileModel.fromJson(profileData);
@@ -117,6 +152,9 @@ class AuthRepository implements IAuthRepository {
 
   @override
   Future<void> logout() async {
+    try {
+      await apiClient.post(ApiEndpoints.logout);
+    } catch (_) {}
     await sessionManager.clearSession();
   }
 }

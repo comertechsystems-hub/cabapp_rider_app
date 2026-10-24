@@ -40,6 +40,10 @@ class ApiClient implements IApiClient {
     if (auth != null) {
       headers['Authorization'] = auth;
     }
+    final deviceId = sessionManager?.deviceId;
+    if (deviceId != null) {
+      headers['X-Device-Id'] = deviceId;
+    }
     if (extraHeaders != null) {
       headers.addAll(extraHeaders);
     }
@@ -74,6 +78,10 @@ class ApiClient implements IApiClient {
         return data['message'];
       }
       return data;
+    }
+
+    if (response.statusCode == 401) {
+      sessionManager?.clear();
     }
 
     String errorMsg = 'HTTP ${response.statusCode} Request Failed';

@@ -6,7 +6,7 @@ import '../../core/constants/app_colors.dart';
 import '../routes/app_routes.dart';
 import '../viewmodels/auth_viewmodel.dart';
 
-/// 3. OTP Verification Screen
+/// 3. OTP Verification Screen: Confirms Phone and Email
 class OtpScreen extends StatefulWidget {
   final String phoneNumber;
 
@@ -54,25 +54,30 @@ class _OtpScreenState extends State<OtpScreen> {
     final success = await authVm.verifyOtp(otp);
 
     if (success && mounted) {
-      // If new user without first name, route to registration
-      if (authVm.profile?.firstName == null || authVm.profile!.firstName!.isEmpty) {
-        Navigator.pushReplacementNamed(context, AppRoutes.registration);
-      } else {
-        Navigator.pushReplacementNamed(context, AppRoutes.locationPermission);
-      }
+      // Rider confirmed! Navigate directly to Home Map and clear auth stack
+      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
     }
   }
 
   Future<void> _handleResend() async {
     if (_secondsRemaining > 0) return;
     final authVm = context.read<AuthViewModel>();
-    await authVm.requestOtp(widget.phoneNumber);
+    if (authVm.email != null && authVm.fullName != null) {
+      await authVm.requestSignUpOtp(
+        fullName: authVm.fullName!,
+        phone: widget.phoneNumber,
+        email: authVm.email!,
+      );
+    } else {
+      await authVm.requestSignInOtp(widget.phoneNumber);
+    }
     _startTimer();
   }
 
   @override
   Widget build(BuildContext context) {
     final authVm = context.watch<AuthViewModel>();
+    final hasEmail = authVm.email != null && authVm.email!.isNotEmpty;
 
     return Scaffold(
       backgroundColor: AppColors.paper,
@@ -85,13 +90,13 @@ class _OtpScreenState extends State<OtpScreen> {
         ),
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Verify Phone',
+                'Verify Account',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -99,21 +104,42 @@ class _OtpScreenState extends State<OtpScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Enter the 6-digit code sent to ${widget.phoneNumber}',
-                      style: const TextStyle(fontSize: 14, color: AppColors.inkSoft),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Edit', style: TextStyle(color: AppColors.navy, fontWeight: FontWeight.bold)),
-                  ),
-                ],
+              Text(
+                hasEmail
+                    ? 'A 6-digit code has been sent to your phone (${widget.phoneNumber}) and your email (${authVm.email}).'
+                    : 'Enter the 6-digit verification code sent to ${widget.phoneNumber}.',
+                style: const TextStyle(fontSize: 14, color: AppColors.inkSoft, height: 1.4),
               ),
-              const SizedBox(height: 36),
+              const SizedBox(height: 24),
+
+              // Dual-channel badge
+              if (hasEmail)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.navy.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.navy.withValues(alpha: 0.2)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.mark_email_read_outlined, color: AppColors.navy, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Verifying both Phone & Email via Amazon SES',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.navy.withValues(alpha: 0.9),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 32),
+
               const Text(
                 '6-DIGIT VERIFICATION CODE',
                 style: TextStyle(
@@ -167,7 +193,7 @@ class _OtpScreenState extends State<OtpScreen> {
                     GestureDetector(
                       onTap: _handleResend,
                       child: const Text(
-                        'Resend SMS',
+                        'Resend Code',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
@@ -194,7 +220,7 @@ class _OtpScreenState extends State<OtpScreen> {
                   ),
                 ),
               ],
-              const Spacer(),
+              const SizedBox(height: 40),
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -212,12 +238,12 @@ class _OtpScreenState extends State<OtpScreen> {
                           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                         )
                       : const Text(
-                          'Verify & Continue',
+                          'Confirm & Continue',
                           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
             ],
           ),
         ),

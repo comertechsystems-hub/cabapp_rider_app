@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SessionManager {
@@ -8,6 +9,7 @@ class SessionManager {
   static const String _keyPhone = 'phone';
   static const String _keyFullName = 'full_name';
   static const String _keyFcmToken = 'fcm_token';
+  static const String _keyDeviceId = 'unique_device_id';
 
   final SharedPreferences _prefs;
 
@@ -16,6 +18,17 @@ class SessionManager {
   static Future<SessionManager> init() async {
     final prefs = await SharedPreferences.getInstance();
     return SessionManager(prefs);
+  }
+
+  /// Persistent device UUID unique to this phone installation
+  String get deviceId {
+    var id = _prefs.getString(_keyDeviceId);
+    if (id == null || id.isEmpty) {
+      final rand = math.Random();
+      id = 'rider_${DateTime.now().millisecondsSinceEpoch}_${rand.nextInt(999999)}';
+      _prefs.setString(_keyDeviceId, id);
+    }
+    return id;
   }
 
   bool get isAuthenticated =>
@@ -73,7 +86,9 @@ class SessionManager {
   }
 
   Future<void> clear() async {
+    final devId = deviceId;
     await _prefs.clear();
+    await _prefs.setString(_keyDeviceId, devId);
   }
 
   Future<void> clearSession() async {
