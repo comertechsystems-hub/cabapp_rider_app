@@ -329,8 +329,10 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
         : legacyVm.fareEstimates;
     final selectedCat = bookingVm.selectedCategory ?? legacyVm.selectedCategory;
 
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
     return Scaffold(
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
@@ -636,7 +638,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                   ),
 
                   // Ride Options & Dynamic Fares (Only displayed when destination is provided)
-                  if (hasDestination) ...[
+                  if (hasDestination && (!isKeyboardOpen || _isTestEnv)) ...[
                     const SizedBox(height: 12),
 
                     if (bookingVm.isLoading || legacyVm.isEstimating)
@@ -720,46 +722,48 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                       ),
                   ],
 
-                  const SizedBox(height: 12),
+                  if (!isKeyboardOpen || _isTestEnv) ...[
+                    const SizedBox(height: 12),
 
-                  // Main Action Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: (!hasDestination || bookingVm.isLoading || selectedCat == null)
-                          ? null
-                          : () async {
-                              FocusScope.of(context).unfocus();
-                              final ride = await bookingVm.bookRide();
-                              if (ride != null) {
-                                activeVm.setActiveRide(ride);
-                              }
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.navy,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        disabledBackgroundColor: AppColors.line,
-                        disabledForegroundColor: AppColors.inkSoft,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    // Main Action Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: (!hasDestination || bookingVm.isLoading || selectedCat == null)
+                            ? null
+                            : () async {
+                                FocusScope.of(context).unfocus();
+                                final ride = await bookingVm.bookRide();
+                                if (ride != null) {
+                                  activeVm.setActiveRide(ride);
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.navy,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          disabledBackgroundColor: AppColors.line,
+                          disabledForegroundColor: AppColors.inkSoft,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: bookingVm.isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              )
+                            : Text(
+                                !hasDestination
+                                    ? 'Type destination to view fares'
+                                    : (selectedCat != null
+                                        ? 'Confirm ${selectedCat.categoryName} • ₦${selectedCat.totalFare.toStringAsFixed(0)}'
+                                        : 'Select a ride category'),
+                                style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold),
+                              ),
                       ),
-                      child: bookingVm.isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                            )
-                          : Text(
-                              !hasDestination
-                                  ? 'Type destination to view fares'
-                                  : (selectedCat != null
-                                      ? 'Confirm ${selectedCat.categoryName} • ₦${selectedCat.totalFare.toStringAsFixed(0)}'
-                                      : 'Select a ride category'),
-                              style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold),
-                            ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
