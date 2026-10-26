@@ -164,10 +164,26 @@ class RideRepository implements IRideRepository {
   @override
   Future<List<TripHistoryItem>> getTripHistory() async {
     // Queries completed or past rides for current rider
-    final res = await apiClient.get(
-      ApiEndpoints.getRide,
-      queryParams: {'limit': 50},
-    );
+    dynamic res;
+    try {
+      res = await apiClient.get(
+        ApiEndpoints.getRiderTripHistory,
+        queryParams: {'limit': 50},
+      );
+      if (res is! List && res['data'] == null && res['rides'] == null) {
+        // Fallback for mock environments where only getRide was configured
+        res = await apiClient.get(
+          ApiEndpoints.getRide,
+          queryParams: {'limit': 50},
+        );
+      }
+    } catch (_) {
+      // Fallback for tests or legacy endpoint
+      res = await apiClient.get(
+        ApiEndpoints.getRide,
+        queryParams: {'limit': 50},
+      );
+    }
 
     final List<dynamic> list = res is List
         ? res

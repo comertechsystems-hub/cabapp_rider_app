@@ -13,6 +13,7 @@ class ApiEndpoints {
   // Rider Profile
   static const String getProfile = '/api/method/mobility.api.rider.get_profile';
   static const String updateProfile = '/api/method/mobility.api.rider.update_profile';
+  static const String getRiderTripHistory = '/api/method/mobility.api.rider.get_trip_history';
 
   // Pricing & Estimates
   static const String estimateFare = '/api/method/mobility.api.pricing.estimate_fare';

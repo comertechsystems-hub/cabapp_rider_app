@@ -29,6 +29,7 @@ class InteractiveLiveMap extends StatefulWidget {
   final void Function(double lat, double lng)? onMapTap;
   final String? mapPinTargetLabel;
   final VoidCallback? onToggleMapPinTarget;
+  final ValueChanged<bool>? onSelectPinTarget;
 
   const InteractiveLiveMap({
     super.key,
@@ -51,6 +52,7 @@ class InteractiveLiveMap extends StatefulWidget {
     this.onMapTap,
     this.mapPinTargetLabel,
     this.onToggleMapPinTarget,
+    this.onSelectPinTarget,
   });
 
   @override
@@ -407,6 +409,32 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
     }
   }
 
+  void _fitRoute() {
+    final latMin = math.min(widget.pickupLat, widget.destinationLat);
+    final latMax = math.max(widget.pickupLat, widget.destinationLat);
+    final lngMin = math.min(widget.pickupLng, widget.destinationLng);
+    final lngMax = math.max(widget.pickupLng, widget.destinationLng);
+    final center = LatLng((latMin + latMax) / 2.0, (lngMin + lngMax) / 2.0);
+    final dist = _calculateDistanceKm(latMin, lngMin, latMax, lngMax);
+
+    double targetZoom = 13.8;
+    if (dist > 30) {
+      targetZoom = 10.5;
+    } else if (dist > 15) {
+      targetZoom = 11.5;
+    } else if (dist > 7) {
+      targetZoom = 12.5;
+    } else if (dist > 3) {
+      targetZoom = 13.5;
+    } else if (dist > 1) {
+      targetZoom = 14.5;
+    } else {
+      targetZoom = 15.2;
+    }
+
+    _animatedMapMove(center, targetZoom);
+  }
+
   void _zoomIn() {
     final currentZoom = _mapController.camera.zoom;
     if (currentZoom < 19.0) {
@@ -654,50 +682,54 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
           ],
         ),
 
-        // 1b. Interactive Map Pin Mode Pill (When hailing a ride on HomeMapScreen)
+        // 1b. Interactive Segmented Pin Mode Pill (Pickup vs Drop-off)
         if (widget.onMapTap != null && !widget.isDriverEnRouteToPickup && !widget.isTripStarted)
           Positioned(
             top: 10,
-            left: 12,
-            right: 12,
+            left: 16,
+            right: 16,
             child: Center(
-              child: GestureDetector(
-                onTap: widget.onToggleMapPinTarget,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.95),
-                    borderRadius: BorderRadius.circular(100),
-                    boxShadow: const [
-                      BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 2)),
-                    ],
-                    border: Border.all(
-                      color: (widget.mapPinTargetLabel == 'Pickup') ? AppColors.navy : AppColors.coral,
-                      width: 1.2,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.96),
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 3)),
+                  ],
+                  border: Border.all(color: AppColors.line),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildPinModeButton(
+                      label: 'Pickup',
+                      icon: Icons.my_location,
+                      activeColor: AppColors.navy,
+                      isActive: widget.mapPinTargetLabel == 'Pickup',
+                      onTap: () {
+                        if (widget.onSelectPinTarget != null) {
+                          widget.onSelectPinTarget!(true);
+                        } else if (widget.mapPinTargetLabel != 'Pickup' && widget.onToggleMapPinTarget != null) {
+                          widget.onToggleMapPinTarget!();
+                        }
+                      },
                     ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.touch_app,
-                        size: 14,
-                        color: (widget.mapPinTargetLabel == 'Pickup') ? AppColors.navy : AppColors.coral,
-                      ),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          'Tap map to pin ${widget.mapPinTargetLabel ?? "Destination"} · Switch',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.ink,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
+                    const SizedBox(width: 4),
+                    _buildPinModeButton(
+                      label: 'Drop-off',
+                      icon: Icons.location_on,
+                      activeColor: AppColors.coral,
+                      isActive: widget.mapPinTargetLabel != 'Pickup',
+                      onTap: () {
+                        if (widget.onSelectPinTarget != null) {
+                          widget.onSelectPinTarget!(false);
+                        } else if (widget.mapPinTargetLabel == 'Pickup' && widget.onToggleMapPinTarget != null) {
+                          widget.onToggleMapPinTarget!();
+                        }
+                      },
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -767,13 +799,19 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
             ),
           ),
 
-        // 3. Tactile Map Controls Overlay (Recenter, Zoom In, Zoom Out)
+        // 3. Tactile Map Controls Overlay (Fit Route, Recenter, Zoom In, Zoom Out)
         Positioned(
           right: 14,
           bottom: 14,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              _buildMapControlButton(
+                icon: Icons.alt_route,
+                tooltip: 'Fit Route',
+                onPressed: _fitRoute,
+              ),
+              const SizedBox(height: 8),
               _buildMapControlButton(
                 icon: Icons.my_location,
                 tooltip: 'Recenter',
@@ -812,6 +850,45 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPinModeButton({
+    required String label,
+    required IconData icon,
+    required Color activeColor,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: isActive ? activeColor : Colors.transparent,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 14,
+              color: isActive ? Colors.white : AppColors.inkSoft,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              'Pin $label',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                color: isActive ? Colors.white : AppColors.ink,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

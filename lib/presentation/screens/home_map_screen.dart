@@ -399,6 +399,9 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                     onToggleMapPinTarget: () {
                       setState(() => _isPinningPickup = !_isPinningPickup);
                     },
+                    onSelectPinTarget: (isPickup) {
+                      setState(() => _isPinningPickup = isPickup);
+                    },
                     onMapTap: (lat, lng) => _handleMapTap(lat, lng, bookingVm, legacyVm),
                   ),
 
@@ -608,7 +611,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                           ),
                         ),
 
-                        // Action icons on right: Clear or Swap
+                        // Action icons on right: Clear, Go CTA, and Swap
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -625,6 +628,32 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                                   legacyVm.setDestination('', 0, 0);
                                 },
                               ),
+                            ElevatedButton(
+                              onPressed: () => _onAddressSubmitted(
+                                _destinationController.text,
+                                isPickup: false,
+                                bookingVm: bookingVm,
+                                legacyVm: legacyVm,
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.navy,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                elevation: 0,
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.search, size: 14),
+                                  SizedBox(width: 3),
+                                  Text('Go', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 2),
                             IconButton(
                               icon: const Icon(Icons.swap_vert, size: 20, color: AppColors.navy),
                               visualDensity: VisualDensity.compact,
@@ -632,6 +661,55 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                               onPressed: () => _swapLocations(bookingVm, legacyVm),
                             ),
                           ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Quick Popular Lagos Hotspots
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.only(top: 8, bottom: 2),
+                    child: Row(
+                      children: [
+                        _quickDestinationChip(
+                          icon: Icons.flight,
+                          label: 'Airport (LOS)',
+                          address: 'Murtala Muhammed Airport (LOS)',
+                          lat: 6.5774,
+                          lng: 3.3212,
+                          bookingVm: bookingVm,
+                          legacyVm: legacyVm,
+                        ),
+                        const SizedBox(width: 6),
+                        _quickDestinationChip(
+                          icon: Icons.shopping_bag_outlined,
+                          label: 'Ikeja Mall',
+                          address: 'Ikeja City Mall (ICM)',
+                          lat: 6.6189,
+                          lng: 3.3582,
+                          bookingVm: bookingVm,
+                          legacyVm: legacyVm,
+                        ),
+                        const SizedBox(width: 6),
+                        _quickDestinationChip(
+                          icon: Icons.water_drop_outlined,
+                          label: 'Lekki Phase 1',
+                          address: 'Admiralty Way, Lekki Phase 1',
+                          lat: 6.4474,
+                          lng: 3.4723,
+                          bookingVm: bookingVm,
+                          legacyVm: legacyVm,
+                        ),
+                        const SizedBox(width: 6),
+                        _quickDestinationChip(
+                          icon: Icons.location_city,
+                          label: 'Victoria Island',
+                          address: 'Victoria Island (Adeola Odeku)',
+                          lat: 6.4281,
+                          lng: 3.4219,
+                          bookingVm: bookingVm,
+                          legacyVm: legacyVm,
                         ),
                       ],
                     ),
@@ -863,6 +941,58 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
             },
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _quickDestinationChip({
+    required IconData icon,
+    required String label,
+    required String address,
+    required double lat,
+    required double lng,
+    required RideBookingViewModel bookingVm,
+    required RideViewModel legacyVm,
+  }) {
+    final isSelected = _destinationController.text.trim() == address;
+    return InkWell(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+        setState(() {
+          _destinationController.text = address;
+          _isPinningPickup = false;
+        });
+        bookingVm.setDestination(address, lat, lng);
+        legacyVm.setDestination(address, lat, lng);
+        bookingVm.fetchFareEstimates();
+        legacyVm.fetchFareEstimates();
+      },
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFEEF2F9) : const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? AppColors.navy : const Color(0xFFE2E8F0),
+            width: isSelected ? 1.4 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: isSelected ? AppColors.navy : AppColors.inkSoft),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                color: isSelected ? AppColors.navy : AppColors.ink,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

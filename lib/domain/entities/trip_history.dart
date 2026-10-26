@@ -23,8 +23,9 @@ class TripHistoryItem {
   });
 
   bool get isCompleted =>
+      status == 'COMPLETED' ||
       status == 'TRIP_COMPLETED' ||
       status == 'PAYMENT_PENDING' ||
       status == 'PAYMENT_CONFIRMED';
-  bool get isCancelled => status == 'CANCELLED' || status.startsWith('CANCELLED');
+  bool get isCancelled => status == 'CANCELLED' || status.startsWith('CANCEL');
 }

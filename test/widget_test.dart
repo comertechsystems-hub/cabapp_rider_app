@@ -448,29 +448,28 @@ void main() {
 
   group('TripHistoryScreen Widget Tests', () {
     testWidgets('renders filter chips and loads trip history list', (tester) async {
-      mockApi.setResponse(
-        ApiEndpoints.getRide,
-        [
-          {
-            'name': 'RD-100',
-            'status': 'TRIP_COMPLETED',
-            'pickup_address': '14 Marina Street, Lagos Island',
-            'destination_address': 'Admiralty Way, Lekki',
-            'vehicle_category': 'ECONOMY',
-            'final_fare': 2800.0,
-            'creation': '2026-09-12 14:30:00',
-          },
-          {
-            'name': 'RD-101',
-            'status': 'CANCELLED_BY_RIDER',
-            'pickup_address': 'MMA2 Domestic Airport',
-            'destination_address': 'Sheraton Hotel, Ikeja',
-            'vehicle_category': 'COMFORT',
-            'final_fare': 0.0,
-            'creation': '2026-09-11 09:15:00',
-          },
-        ],
-      );
+      final tripList = [
+        {
+          'name': 'RD-100',
+          'status': 'TRIP_COMPLETED',
+          'pickup_address': '14 Marina Street, Lagos Island',
+          'destination_address': 'Admiralty Way, Lekki',
+          'vehicle_category': 'ECONOMY',
+          'final_fare': 2800.0,
+          'creation': '2026-09-12 14:30:00',
+        },
+        {
+          'name': 'RD-101',
+          'status': 'CANCELLED_BY_RIDER',
+          'pickup_address': 'MMA2 Domestic Airport',
+          'destination_address': 'Sheraton Hotel, Ikeja',
+          'vehicle_category': 'COMFORT',
+          'final_fare': 0.0,
+          'creation': '2026-09-11 09:15:00',
+        },
+      ];
+      mockApi.setResponse(ApiEndpoints.getRiderTripHistory, tripList);
+      mockApi.setResponse(ApiEndpoints.getRide, tripList);
 
       final historyVm = TripHistoryViewModel(rideRepo: rideRepo);
 

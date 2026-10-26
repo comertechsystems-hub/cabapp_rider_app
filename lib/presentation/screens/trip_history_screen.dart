@@ -48,30 +48,39 @@ class _TripHistoryScreenState extends State<TripHistoryScreen> {
               Expanded(
                 child: vm.isLoading
                     ? const Center(child: CircularProgressIndicator())
-                    : vm.filteredTrips.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.history, size: 64, color: AppColors.inkSoft.withValues(alpha: 0.4)),
-                                const SizedBox(height: 12),
-                                const Text(
-                                  'No trips found',
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.ink),
-                                ),
-                                const SizedBox(height: 4),
-                                const Text(
-                                  'Completed and past trips will appear here.',
-                                  style: TextStyle(fontSize: 13, color: AppColors.inkSoft),
-                                ),
-                              ],
-                            ),
-                          )
-                        : ListView.separated(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: vm.filteredTrips.length,
-                            separatorBuilder: (_, _) => const SizedBox(height: 12),
-                            itemBuilder: (context, index) {
+                    : RefreshIndicator(
+                        onRefresh: () => vm.loadTripHistory(),
+                        child: vm.filteredTrips.isEmpty
+                            ? ListView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                children: [
+                                  const SizedBox(height: 120),
+                                  Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.history, size: 64, color: AppColors.inkSoft.withValues(alpha: 0.4)),
+                                        const SizedBox(height: 12),
+                                        const Text(
+                                          'No trips found',
+                                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.ink),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        const Text(
+                                          'Completed and past trips will appear here.',
+                                          style: TextStyle(fontSize: 13, color: AppColors.inkSoft),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : ListView.separated(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                padding: const EdgeInsets.all(16),
+                                itemCount: vm.filteredTrips.length,
+                                separatorBuilder: (_, _) => const SizedBox(height: 12),
+                                itemBuilder: (context, index) {
                               final trip = vm.filteredTrips[index];
                               return Container(
                                 padding: const EdgeInsets.all(16),
@@ -160,6 +169,7 @@ class _TripHistoryScreenState extends State<TripHistoryScreen> {
                               );
                             },
                           ),
+                      ),
               ),
             ],
           ),
