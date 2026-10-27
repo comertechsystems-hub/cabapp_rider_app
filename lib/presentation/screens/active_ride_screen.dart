@@ -22,6 +22,7 @@ class ActiveRideScreen extends StatefulWidget {
 class _ActiveRideScreenState extends State<ActiveRideScreen> {
   Timer? _pollingTimer;
   String? _lastNotifiedAcceptedRideId;
+  String? _lastNotifiedOfferId;
   bool _showAcceptanceBanner = false;
 
   @override
@@ -106,6 +107,20 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
           ),
         );
       });
+    }
+
+    // Detect new driver counter-offer arrival and notify rider with haptics & chime
+    if (activeVm.driverOffers.isNotEmpty) {
+      final topOffer = activeVm.driverOffers.first;
+      final topOfferId = topOffer['name']?.toString();
+      if (topOfferId != null && topOfferId != _lastNotifiedOfferId) {
+        _lastNotifiedOfferId = topOfferId;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          HapticFeedback.heavyImpact();
+          SystemSound.play(SystemSoundType.alert);
+        });
+      }
     }
 
     final chatMessages = ride.chatMessages;
@@ -405,152 +420,7 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
                       ],
                       // Connecting radar while searching or awaiting driver accept
                       if (ride.isSearching || ride.isDriverAssigned) ...[
-                        Row(
-                          children: [
-                            const SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(strokeWidth: 2.5, color: AppColors.navy),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    ride.isDriverAssigned
-                                        ? 'Ride offered to nearby driver...'
-                                        : 'Connecting with closest driver...',
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.ink),
-                                  ),
-                                  Text(
-                                    ride.isDriverAssigned
-                                        ? 'Awaiting driver mobile confirmation'
-                                        : 'Broadcasting offer across verified drivers',
-                                    style: const TextStyle(fontSize: 12, color: AppColors.inkSoft),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEAECF3),
-                                borderRadius: BorderRadius.circular(100),
-                              ),
-                              child: Text(
-                                '● ${activeVm.searchSecondsElapsed}s',
-                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.navy),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Rider's Current Active Bid & Fast Raise Controls
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.line),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'YOUR CURRENT BID',
-                                        style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: AppColors.inkSoft),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        '₦${(ride.offeredFare ?? ride.totalFare).toStringAsFixed(0)}',
-                                        style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: AppColors.navy),
-                                      ),
-                                    ],
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.navy,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: const Text(
-                                      'Bidding Open',
-                                      style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              const Text(
-                                'Drivers may accept or send counter-offers. Want faster pickup? Raise your offer:',
-                                style: TextStyle(fontSize: 11, color: AppColors.inkSoft),
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  ActionChip(
-                                    avatar: const Icon(Icons.arrow_upward, size: 12, color: AppColors.navy),
-                                    label: const Text('+₦200', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                                    onPressed: () async {
-                                      final ok = await activeVm.raiseOffer(200);
-                                      if (ok && context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Offer raised by ₦200! Broadcasters notified.'),
-                                            duration: Duration(seconds: 2),
-                                          ),
-                                        );
-                                      }
-                                    },
-                                  ),
-                                  const SizedBox(width: 6),
-                                  ActionChip(
-                                    avatar: const Icon(Icons.arrow_upward, size: 12, color: AppColors.navy),
-                                    label: const Text('+₦500', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                                    onPressed: () async {
-                                      final ok = await activeVm.raiseOffer(500);
-                                      if (ok && context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Offer raised by ₦500! Broadcasters notified.'),
-                                            duration: Duration(seconds: 2),
-                                          ),
-                                        );
-                                      }
-                                    },
-                                  ),
-                                  const SizedBox(width: 6),
-                                  ActionChip(
-                                    avatar: const Icon(Icons.arrow_upward, size: 12, color: AppColors.navy),
-                                    label: const Text('+₦1,000', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                                    onPressed: () async {
-                                      final ok = await activeVm.raiseOffer(1000);
-                                      if (ok && context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Offer raised by ₦1,000! Broadcasters notified.'),
-                                            duration: Duration(seconds: 2),
-                                          ),
-                                        );
-                                      }
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Live Incoming Driver Counter-Offers List
+                        // Live Incoming Driver Counter-Offers List (Prominently Placed at the Top)
                         if (activeVm.driverOffers.isNotEmpty) ...[
                           Container(
                             padding: const EdgeInsets.all(12),
@@ -747,6 +617,150 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
                           ),
                           const SizedBox(height: 12),
                         ],
+                        Row(
+                          children: [
+                            const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2.5, color: AppColors.navy),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    ride.isDriverAssigned
+                                        ? 'Ride offered to nearby driver...'
+                                        : 'Connecting with closest driver...',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.ink),
+                                  ),
+                                  Text(
+                                    ride.isDriverAssigned
+                                        ? 'Awaiting driver mobile confirmation'
+                                        : 'Broadcasting offer across verified drivers',
+                                    style: const TextStyle(fontSize: 12, color: AppColors.inkSoft),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEAECF3),
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                              child: Text(
+                                '● ${activeVm.searchSecondsElapsed}s',
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.navy),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Rider's Current Active Bid & Fast Raise Controls
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.line),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'YOUR CURRENT BID',
+                                        style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: AppColors.inkSoft),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '₦${(ride.offeredFare ?? ride.totalFare).toStringAsFixed(0)}',
+                                        style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: AppColors.navy),
+                                      ),
+                                    ],
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.navy,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Text(
+                                      'Bidding Open',
+                                      style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              const Text(
+                                'Drivers may accept or send counter-offers. Want faster pickup? Raise your offer:',
+                                style: TextStyle(fontSize: 11, color: AppColors.inkSoft),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  ActionChip(
+                                    avatar: const Icon(Icons.arrow_upward, size: 12, color: AppColors.navy),
+                                    label: const Text('+₦200', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                    onPressed: () async {
+                                      final ok = await activeVm.raiseOffer(200);
+                                      if (ok && context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Offer raised by ₦200! Broadcasters notified.'),
+                                            duration: Duration(seconds: 2),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                  const SizedBox(width: 6),
+                                  ActionChip(
+                                    avatar: const Icon(Icons.arrow_upward, size: 12, color: AppColors.navy),
+                                    label: const Text('+₦500', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                    onPressed: () async {
+                                      final ok = await activeVm.raiseOffer(500);
+                                      if (ok && context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Offer raised by ₦500! Broadcasters notified.'),
+                                            duration: Duration(seconds: 2),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                  const SizedBox(width: 6),
+                                  ActionChip(
+                                    avatar: const Icon(Icons.arrow_upward, size: 12, color: AppColors.navy),
+                                    label: const Text('+₦1,000', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                    onPressed: () async {
+                                      final ok = await activeVm.raiseOffer(1000);
+                                      if (ok && context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Offer raised by ₦1,000! Broadcasters notified.'),
+                                            duration: Duration(seconds: 2),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
                       ],
                       // Assigned Driver Card + Call / Chat Actions (Displayed once driver ACCEPTS or is active)
                       if (hasAssignedDriver) ...[
