@@ -33,6 +33,8 @@ class ActiveRide {
   final String? biddingStatus;
   final double? surgeMultiplier;
   final String? surgeReason;
+  final double? fuelPriceApplied;
+  final double? fuelCostEstimated;
 
   const ActiveRide({
     required this.id,
@@ -66,6 +68,8 @@ class ActiveRide {
     this.biddingStatus,
     this.surgeMultiplier,
     this.surgeReason,
+    this.fuelPriceApplied,
+    this.fuelCostEstimated,
   });
 
   bool get isRequested => status == 'REQUESTED';

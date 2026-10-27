@@ -97,16 +97,32 @@ class RideViewModel extends ChangeNotifier with ViewStateMixin {
           totalFare: e.totalFare,
           serviceArea: e.serviceArea,
           currency: e.currency,
+          fuelPricePerLiter: e.fuelPricePerLiter,
+          estimatedFuelCost: e.estimatedFuelCost,
+          totalOperatingCost: e.totalOperatingCost,
+          surgeMultiplier: e.surgeMultiplier,
+          surgeReason: e.surgeReason,
+          recommendedFare: e.recommendedFare,
+          minOfferedFare: e.minOfferedFare,
+          maxOfferedFare: e.maxOfferedFare,
         );
       }).toList();
 
       if (_fareEstimates.isNotEmpty) {
-        _selectedCategory ??= _fareEstimates.firstWhere(
-          (e) =>
-              e.vehicleCategory.toUpperCase().contains('ECONOMY') ||
-              e.categoryName.toLowerCase().contains('standard'),
-          orElse: () => _fareEstimates.first,
-        );
+        if (_selectedCategory != null) {
+          final curCode = _selectedCategory!.vehicleCategory.toUpperCase();
+          _selectedCategory = _fareEstimates.firstWhere(
+            (e) => e.vehicleCategory.toUpperCase() == curCode,
+            orElse: () => _fareEstimates.first,
+          );
+        } else {
+          _selectedCategory = _fareEstimates.firstWhere(
+            (e) =>
+                e.vehicleCategory.toUpperCase().contains('ECONOMY') ||
+                e.categoryName.toLowerCase().contains('standard'),
+            orElse: () => _fareEstimates.first,
+          );
+        }
       } else {
         _applyFallbackEstimates();
       }

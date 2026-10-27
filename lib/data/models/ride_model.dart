@@ -43,6 +43,8 @@ class RideModel extends ActiveRide {
     super.biddingStatus,
     super.surgeMultiplier,
     super.surgeReason,
+    super.fuelPriceApplied,
+    super.fuelCostEstimated,
   });
 
   String get rider => riderId;
@@ -131,6 +133,10 @@ class RideModel extends ActiveRide {
       biddingStatus: json['bidding_status']?.toString(),
       surgeMultiplier: (json['surge_multiplier'] as num?)?.toDouble(),
       surgeReason: json['surge_reason']?.toString(),
+      fuelPriceApplied: (json['fuel_price_applied'] as num?)?.toDouble() ??
+          (json['fuel_price_per_liter'] as num?)?.toDouble(),
+      fuelCostEstimated: (json['fuel_cost_estimated'] as num?)?.toDouble() ??
+          (json['estimated_fuel_cost'] as num?)?.toDouble(),
     );
   }
 

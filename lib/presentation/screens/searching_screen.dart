@@ -333,11 +333,19 @@ class _SearchingScreenState extends State<SearchingScreen> with SingleTickerProv
                           children: [
                             const Icon(Icons.local_gas_station, size: 15, color: AppColors.ink),
                             const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                '⛽ Fuel Benchmark: ~₦${((((ride?.actualDistanceKm ?? 5.0) / 12.0) * 1050).clamp(300, 999999)).toStringAsFixed(0)} (PMS ₦1,050/L at 12 km/L) · 30s window',
-                                style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppColors.ink),
-                              ),
+                            Builder(
+                              builder: (ctx) {
+                                final fPrice = ride?.fuelPriceApplied ?? 1400.0;
+                                final fCost = (ride?.fuelCostEstimated != null && ride!.fuelCostEstimated! > 0)
+                                    ? ride.fuelCostEstimated!
+                                    : (((ride?.actualDistanceKm ?? 5.0) / 12.0) * fPrice);
+                                return Expanded(
+                                  child: Text(
+                                    '⛽ Fuel Benchmark: ~₦${fCost.clamp(300, 999999).toStringAsFixed(0)} (PMS ₦${fPrice.toStringAsFixed(0)}/L at 12 km/L) · 30s window',
+                                    style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppColors.ink),
+                                  ),
+                                );
+                              },
                             ),
                           ],
                         ),

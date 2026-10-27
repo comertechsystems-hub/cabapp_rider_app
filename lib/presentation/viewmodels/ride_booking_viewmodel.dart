@@ -83,15 +83,26 @@ class RideBookingViewModel extends ChangeNotifier with ViewStateMixin {
       );
 
       if (_fareEstimates.isNotEmpty) {
-        FareEstimate? matched;
-        for (final c in _fareEstimates) {
-          if (c.vehicleCategory.toUpperCase().contains('ECONOMY') ||
-              c.categoryName.toLowerCase().contains('standard')) {
-            matched = c;
-            break;
+        if (_selectedCategory != null) {
+          final curCode = _selectedCategory!.vehicleCategory.toUpperCase();
+          _selectedCategory = _fareEstimates.firstWhere(
+            (c) => c.vehicleCategory.toUpperCase() == curCode,
+            orElse: () => _fareEstimates.first,
+          );
+        } else {
+          FareEstimate? matched;
+          for (final c in _fareEstimates) {
+            if (c.vehicleCategory.toUpperCase().contains('ECONOMY') ||
+                c.categoryName.toLowerCase().contains('standard')) {
+              matched = c;
+              break;
+            }
           }
+          _selectedCategory = matched ?? _fareEstimates.first;
         }
-        _selectedCategory ??= (matched ?? _fareEstimates.first);
+        _customOfferedFare = _selectedCategory!.recommendedFare > 0
+            ? _selectedCategory!.recommendedFare
+            : _selectedCategory!.totalFare;
         setState(ViewState.success);
       } else {
         _applyFallbackEstimates();
