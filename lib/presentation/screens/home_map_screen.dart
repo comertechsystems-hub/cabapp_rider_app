@@ -798,6 +798,213 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                           );
                         }).toList(),
                       ),
+
+                    if (selectedCat != null) ...[
+                      const SizedBox(height: 10),
+                      // Informative Cost & Two-Way Pricing Liberty Bidding Card
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.line),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Informative benchmark row: fuel cost and dynamic surge
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEEF2F6),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.local_gas_station, size: 12, color: AppColors.navy),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '⛽ Fuel: ~₦${((selectedCat.estimatedFuelCost > 0 ? selectedCat.estimatedFuelCost : ((selectedCat.distanceKm / 12.0) * (selectedCat.fuelPricePerLiter > 0 ? selectedCat.fuelPricePerLiter : 1050.0)))).toStringAsFixed(0)} (PMS ₦${(selectedCat.fuelPricePerLiter > 0 ? selectedCat.fuelPricePerLiter : 1050.0).toStringAsFixed(0)}/L)',
+                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.ink),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Spacer(),
+                                if (selectedCat.surgeMultiplier > 1.0)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.goldSoft,
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(color: AppColors.gold, width: 0.8),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.bolt, size: 12, color: AppColors.gold),
+                                        const SizedBox(width: 2),
+                                        Text(
+                                          '${selectedCat.surgeMultiplier.toStringAsFixed(1)}x Surge',
+                                          style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: AppColors.ink),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                else
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFDCFCE7),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Text(
+                                      '🟢 Standard Rate',
+                                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF15803D)),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+
+                            // Two-Way Pricing Liberty Proposal Box
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: const [
+                                        Icon(Icons.gavel, size: 13, color: AppColors.navy),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          'Your Proposed Fare',
+                                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.navy),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Fair range: ₦${(selectedCat.minOfferedFare > 0 ? selectedCat.minOfferedFare : (selectedCat.recommendedFare > 0 ? selectedCat.recommendedFare : selectedCat.totalFare) * 0.70).toStringAsFixed(0)} – ₦${(selectedCat.maxOfferedFare > 0 ? selectedCat.maxOfferedFare : (selectedCat.recommendedFare > 0 ? selectedCat.recommendedFare : selectedCat.totalFare) * 2.0).toStringAsFixed(0)}',
+                                      style: const TextStyle(fontSize: 10.5, color: AppColors.inkSoft),
+                                    ),
+                                  ],
+                                ),
+                                InkWell(
+                                  onTap: () {
+                                    final rec = selectedCat.recommendedFare > 0 ? selectedCat.recommendedFare : selectedCat.totalFare;
+                                    final minF = selectedCat.minOfferedFare > 0 ? selectedCat.minOfferedFare : (rec * 0.70);
+                                    final maxF = selectedCat.maxOfferedFare > 0 ? selectedCat.maxOfferedFare : (rec * 2.00);
+                                    _showCustomFareDialog(context, bookingVm, minF, maxF);
+                                  },
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: AppColors.navy, width: 1.2),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          '₦${bookingVm.effectiveOfferedFare.toStringAsFixed(0)}',
+                                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.navy),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        const Icon(Icons.edit, size: 13, color: AppColors.navy),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+
+                            // Fast increment / decrement bidding chips
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: [
+                                  _bidAdjustmentChip(
+                                    label: '-₦200',
+                                    onTap: () {
+                                      final cur = bookingVm.effectiveOfferedFare;
+                                      final rec = selectedCat.recommendedFare > 0 ? selectedCat.recommendedFare : selectedCat.totalFare;
+                                      final minF = selectedCat.minOfferedFare > 0 ? selectedCat.minOfferedFare : (rec * 0.70);
+                                      if (cur - 200 >= minF) {
+                                        bookingVm.setCustomOfferedFare(cur - 200);
+                                      }
+                                    },
+                                  ),
+                                  const SizedBox(width: 5),
+                                  _bidAdjustmentChip(
+                                    label: '-₦100',
+                                    onTap: () {
+                                      final cur = bookingVm.effectiveOfferedFare;
+                                      final rec = selectedCat.recommendedFare > 0 ? selectedCat.recommendedFare : selectedCat.totalFare;
+                                      final minF = selectedCat.minOfferedFare > 0 ? selectedCat.minOfferedFare : (rec * 0.70);
+                                      if (cur - 100 >= minF) {
+                                        bookingVm.setCustomOfferedFare(cur - 100);
+                                      }
+                                    },
+                                  ),
+                                  const SizedBox(width: 5),
+                                  _bidAdjustmentChip(
+                                    label: 'Recommended (₦${(selectedCat.recommendedFare > 0 ? selectedCat.recommendedFare : selectedCat.totalFare).toStringAsFixed(0)})',
+                                    isHighlight: true,
+                                    onTap: () {
+                                      bookingVm.setCustomOfferedFare(selectedCat.recommendedFare > 0 ? selectedCat.recommendedFare : selectedCat.totalFare);
+                                    },
+                                  ),
+                                  const SizedBox(width: 5),
+                                  _bidAdjustmentChip(
+                                    label: '+₦100',
+                                    onTap: () {
+                                      final cur = bookingVm.effectiveOfferedFare;
+                                      final rec = selectedCat.recommendedFare > 0 ? selectedCat.recommendedFare : selectedCat.totalFare;
+                                      final maxF = selectedCat.maxOfferedFare > 0 ? selectedCat.maxOfferedFare : (rec * 2.0);
+                                      if (cur + 100 <= maxF) {
+                                        bookingVm.setCustomOfferedFare(cur + 100);
+                                      }
+                                    },
+                                  ),
+                                  const SizedBox(width: 5),
+                                  _bidAdjustmentChip(
+                                    label: '+₦200',
+                                    onTap: () {
+                                      final cur = bookingVm.effectiveOfferedFare;
+                                      final rec = selectedCat.recommendedFare > 0 ? selectedCat.recommendedFare : selectedCat.totalFare;
+                                      final maxF = selectedCat.maxOfferedFare > 0 ? selectedCat.maxOfferedFare : (rec * 2.0);
+                                      if (cur + 200 <= maxF) {
+                                        bookingVm.setCustomOfferedFare(cur + 200);
+                                      }
+                                    },
+                                  ),
+                                  const SizedBox(width: 5),
+                                  _bidAdjustmentChip(
+                                    label: '+₦500',
+                                    onTap: () {
+                                      final cur = bookingVm.effectiveOfferedFare;
+                                      final rec = selectedCat.recommendedFare > 0 ? selectedCat.recommendedFare : selectedCat.totalFare;
+                                      final maxF = selectedCat.maxOfferedFare > 0 ? selectedCat.maxOfferedFare : (rec * 2.0);
+                                      if (cur + 500 <= maxF) {
+                                        bookingVm.setCustomOfferedFare(cur + 500);
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
 
                   if (!isKeyboardOpen || _isTestEnv) ...[
@@ -835,9 +1042,9 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                                 !hasDestination
                                     ? 'Type destination to view fares'
                                     : (selectedCat != null
-                                        ? 'Confirm ${selectedCat.categoryName} • ₦${selectedCat.totalFare.toStringAsFixed(0)}'
+                                        ? 'Confirm ${selectedCat.categoryName} • ₦${bookingVm.effectiveOfferedFare.toStringAsFixed(0)} (Start Bidding)'
                                         : 'Select a ride category'),
-                                style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold),
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                               ),
                       ),
                     ),
@@ -993,6 +1200,100 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _bidAdjustmentChip({
+    required String label,
+    required VoidCallback onTap,
+    bool isHighlight = false,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(100),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+        decoration: BoxDecoration(
+          color: isHighlight ? AppColors.navy : Colors.white,
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(
+            color: isHighlight ? AppColors.navy : AppColors.line,
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: isHighlight ? FontWeight.bold : FontWeight.w600,
+            color: isHighlight ? Colors.white : AppColors.ink,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showCustomFareDialog(
+    BuildContext context,
+    RideBookingViewModel bookingVm,
+    double minFare,
+    double maxFare,
+  ) {
+    final controller = TextEditingController(
+      text: bookingVm.effectiveOfferedFare.toStringAsFixed(0),
+    );
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Propose Your Fare', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Two-way pricing liberty allows you to offer what you want to pay. Drivers can accept or propose counter-offers.',
+              style: TextStyle(fontSize: 12, color: AppColors.inkSoft),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              autofocus: true,
+              decoration: InputDecoration(
+                prefixText: '₦ ',
+                labelText: 'Offer Amount',
+                hintText: 'e.g. 3000',
+                helperText: 'Fair range: ₦${minFare.toStringAsFixed(0)} – ₦${maxFare.toStringAsFixed(0)}',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.navy,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              final val = double.tryParse(controller.text.trim());
+              if (val != null && val >= minFare) {
+                bookingVm.setCustomOfferedFare(val);
+                Navigator.pop(ctx);
+              } else if (val != null && val < minFare) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Offer must be at least ₦${minFare.toStringAsFixed(0)} to cover operational fuel cost.'),
+                    backgroundColor: AppColors.coral,
+                  ),
+                );
+              }
+            },
+            child: const Text('Set Offer'),
+          ),
+        ],
       ),
     );
   }

@@ -207,9 +207,128 @@ class _ConfirmRideScreenState extends State<ConfirmRideScreen> {
               ),
               const SizedBox(height: 16),
 
+              // Dynamic Surge Warning Banner if surge active
+              if (category.surgeMultiplier > 1.0) ...[
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.goldSoft,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.gold),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.bolt, color: AppColors.gold, size: 24),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Dynamic Rush Hour Surge (${category.surgeMultiplier.toStringAsFixed(2)}x)',
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.ink),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              category.surgeReason ?? 'Fares slightly adjusted due to high demand and rush hour.',
+                              style: const TextStyle(fontSize: 11.5, color: AppColors.inkSoft),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Two-Way Pricing Liberty Offer Card
+              const Text(
+                'TWO-WAY PRICING LIBERTY (YOUR OFFER)',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.0,
+                  color: AppColors.inkSoft,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.navy, width: 1.5),
+                  boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Your Proposed Fare',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.inkSoft),
+                        ),
+                        Text(
+                          '₦${bookingVm.effectiveOfferedFare.toStringAsFixed(0)}',
+                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.navy),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'You and the driver have pricing freedom. Propose an offer below or accept driver counter-offers.',
+                      style: TextStyle(fontSize: 11.5, color: AppColors.inkSoft),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ActionChip(
+                          avatar: const Icon(Icons.remove, size: 14),
+                          label: const Text('-₦200'),
+                          onPressed: () {
+                            final cur = bookingVm.effectiveOfferedFare;
+                            final minF = category.minOfferedFare > 0 ? category.minOfferedFare : (category.totalFare * 0.70);
+                            if (cur - 200 >= minF) {
+                              bookingVm.setCustomOfferedFare(cur - 200);
+                            }
+                          },
+                        ),
+                        ActionChip(
+                          avatar: const Icon(Icons.refresh, size: 14),
+                          label: Text('Recommended (₦${(category.recommendedFare > 0 ? category.recommendedFare : category.totalFare).toStringAsFixed(0)})'),
+                          onPressed: () {
+                            bookingVm.setCustomOfferedFare(category.recommendedFare > 0 ? category.recommendedFare : category.totalFare);
+                          },
+                        ),
+                        ActionChip(
+                          avatar: const Icon(Icons.add, size: 14),
+                          label: const Text('+₦200'),
+                          onPressed: () {
+                            bookingVm.setCustomOfferedFare(bookingVm.effectiveOfferedFare + 200);
+                          },
+                        ),
+                        ActionChip(
+                          avatar: const Icon(Icons.add, size: 14),
+                          label: const Text('+₦500'),
+                          onPressed: () {
+                            bookingVm.setCustomOfferedFare(bookingVm.effectiveOfferedFare + 500);
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
               // Fare Breakdown
               const Text(
-                'FARE BREAKDOWN',
+                'REALISTIC FUEL & COST BREAKDOWN',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
@@ -231,11 +350,16 @@ class _ConfirmRideScreenState extends State<ConfirmRideScreen> {
                     const Divider(height: 16, color: AppColors.line),
                     _buildFareRow('Distance (${category.distanceKm.toStringAsFixed(1)} km)', '₦${(category.distanceKm * category.distanceRate).toStringAsFixed(2)}'),
                     const Divider(height: 16, color: AppColors.line),
-                    _buildFareRow('Duration (~${category.estimatedDurationMins.toStringAsFixed(0)} mins)', '₦${(category.estimatedDurationMins * category.timeRate).toStringAsFixed(2)}'),
+                    _buildFareRow('Trip Duration (~${category.estimatedDurationMins.toStringAsFixed(0)} mins)', '₦${(category.estimatedDurationMins * category.timeRate).toStringAsFixed(2)}'),
                     const Divider(height: 16, color: AppColors.line),
-                    _buildFareRow('Platform Service Fee', '₦0.00 (Free)'),
+                    _buildFareRow(
+                      '⛽ Est. Running Fuel Cost (PMS ₦${category.fuelPricePerLiter.toStringAsFixed(0)}/L)',
+                      '~₦${category.estimatedFuelCost > 0 ? category.estimatedFuelCost.toStringAsFixed(0) : ((category.distanceKm / 12.0) * category.fuelPricePerLiter).toStringAsFixed(0)}',
+                    ),
+                    const Divider(height: 16, color: AppColors.line),
+                    _buildFareRow('Platform Service Fee', '₦0.00 (Commission Free)'),
                     const Divider(height: 20, color: AppColors.line, thickness: 1.5),
-                    _buildFareRow('Estimated Total', '₦${category.totalFare.toStringAsFixed(2)}', isBold: true),
+                    _buildFareRow('Offered Trip Total', '₦${bookingVm.effectiveOfferedFare.toStringAsFixed(2)}', isBold: true),
                   ],
                 ),
               ),

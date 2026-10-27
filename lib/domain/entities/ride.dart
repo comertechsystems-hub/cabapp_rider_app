@@ -28,6 +28,11 @@ class ActiveRide {
   final double? driverDistanceKm;
   final List<Map<String, dynamic>> chatMessages;
   final DateTime? createdAt;
+  final double? offeredFare;
+  final double? agreedFare;
+  final String? biddingStatus;
+  final double? surgeMultiplier;
+  final String? surgeReason;
 
   const ActiveRide({
     required this.id,
@@ -56,6 +61,11 @@ class ActiveRide {
     this.driverDistanceKm,
     this.chatMessages = const [],
     this.createdAt,
+    this.offeredFare,
+    this.agreedFare,
+    this.biddingStatus,
+    this.surgeMultiplier,
+    this.surgeReason,
   });
 
   bool get isRequested => status == 'REQUESTED';

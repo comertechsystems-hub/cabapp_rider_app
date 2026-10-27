@@ -1,5 +1,6 @@
 import '../../core/constants/api_endpoints.dart';
 import '../../core/network/api_client.dart';
+import '../../domain/entities/ride.dart';
 import '../../domain/entities/trip_history.dart';
 import '../../domain/repositories/i_ride_repository.dart';
 import '../models/fare_estimate_model.dart';
@@ -60,6 +61,7 @@ class RideRepository implements IRideRepository {
     required String vehicleCategory,
     double? distanceKm,
     double? estimatedDurationMins,
+    double? offeredFare,
     bool autoSearch = true,
   }) async {
     final dLat = destLat ?? destinationLat ?? 0.0;
@@ -78,11 +80,67 @@ class RideRepository implements IRideRepository {
         'vehicle_category': vehicleCategory,
         'distance_km': ?distanceKm,
         'estimated_duration_mins': ?estimatedDurationMins,
+        'offered_fare': ?offeredFare,
         'auto_search': autoSearch ? 1 : 0,
       },
     );
 
     final data = res['data'] ?? res;
+    return RideModel.fromJson(data);
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getRideDriverOffers(String rideId) async {
+    final res = await apiClient.get(
+      ApiEndpoints.getRideDriverOffers,
+      queryParams: {'ride_id': rideId},
+    );
+    final rawList = res is Map ? (res['offers'] ?? res['data'] ?? []) : [];
+    if (rawList is List) {
+      return rawList.whereType<Map>().map((m) => Map<String, dynamic>.from(m)).toList();
+    }
+    return [];
+  }
+
+  @override
+  Future<ActiveRide> acceptDriverCounterOffer(String rideId, String offerId) async {
+    final res = await apiClient.post(
+      ApiEndpoints.riderAcceptCounterOffer,
+      body: {
+        'ride_id': rideId,
+        'offer_id': offerId,
+      },
+    );
+    final data = res['data'] ?? res['ride'] ?? res;
+    return RideModel.fromJson(data);
+  }
+
+  @override
+  Future<bool> declineDriverCounterOffer(String rideId, String offerId) async {
+    try {
+      await apiClient.post(
+        ApiEndpoints.riderDeclineCounterOffer,
+        body: {
+          'ride_id': rideId,
+          'offer_id': offerId,
+        },
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  @override
+  Future<ActiveRide> updateRideOffer(String rideId, double offeredFare) async {
+    final res = await apiClient.post(
+      ApiEndpoints.updateRideOffer,
+      body: {
+        'ride_id': rideId,
+        'offered_fare': offeredFare,
+      },
+    );
+    final data = res['data'] ?? res['ride'] ?? res;
     return RideModel.fromJson(data);
   }
 

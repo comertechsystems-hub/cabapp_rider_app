@@ -18,6 +18,7 @@ class RideBookingViewModel extends ChangeNotifier with ViewStateMixin {
   List<FareEstimate> _fareEstimates = [];
   FareEstimate? _selectedCategory;
   ActiveRide? _bookedRide;
+  double? _customOfferedFare;
 
   RideBookingViewModel({required this.rideRepo});
 
@@ -32,6 +33,9 @@ class RideBookingViewModel extends ChangeNotifier with ViewStateMixin {
   List<FareEstimate> get fareEstimates => _fareEstimates;
   FareEstimate? get selectedCategory => _selectedCategory;
   ActiveRide? get bookedRide => _bookedRide;
+  double? get customOfferedFare => _customOfferedFare;
+  double get effectiveOfferedFare =>
+      _customOfferedFare ?? _selectedCategory?.recommendedFare ?? _selectedCategory?.totalFare ?? 0.0;
 
   bool get hasValidRoute =>
       _pickupLat != null &&
@@ -55,6 +59,12 @@ class RideBookingViewModel extends ChangeNotifier with ViewStateMixin {
 
   void selectCategory(FareEstimate category) {
     _selectedCategory = category;
+    _customOfferedFare = category.recommendedFare > 0 ? category.recommendedFare : category.totalFare;
+    notifyListeners();
+  }
+
+  void setCustomOfferedFare(double? fare) {
+    _customOfferedFare = fare;
     notifyListeners();
   }
 
@@ -157,6 +167,7 @@ class RideBookingViewModel extends ChangeNotifier with ViewStateMixin {
         vehicleCategory: _selectedCategory!.vehicleCategory,
         distanceKm: _selectedCategory!.distanceKm,
         estimatedDurationMins: _selectedCategory!.estimatedDurationMins,
+        offeredFare: effectiveOfferedFare > 0 ? effectiveOfferedFare : null,
         autoSearch: true,
       );
 
@@ -181,6 +192,7 @@ class RideBookingViewModel extends ChangeNotifier with ViewStateMixin {
     _fareEstimates = [];
     _selectedCategory = null;
     _bookedRide = null;
+    _customOfferedFare = null;
     setState(ViewState.initial);
     notifyListeners();
   }

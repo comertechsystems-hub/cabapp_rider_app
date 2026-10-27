@@ -21,6 +21,7 @@ class ActiveRideViewModel extends ChangeNotifier with ViewStateMixin {
   int _searchSecondsElapsed = 0;
   bool _hasTriggeredAcceptedNotification = false;
   ActiveRide? _justAcceptedRide;
+  List<Map<String, dynamic>> _driverOffers = [];
 
   ActiveRideViewModel({
     required this.rideRepo,
@@ -33,6 +34,7 @@ class ActiveRideViewModel extends ChangeNotifier with ViewStateMixin {
   DriverLocationEvent? get driverLocation => _driverLocation;
   int get searchSecondsElapsed => _searchSecondsElapsed;
   ActiveRide? get justAcceptedRide => _justAcceptedRide;
+  List<Map<String, dynamic>> get driverOffers => _driverOffers;
 
   bool get hasActiveRide => _currentRide != null && !_currentRide!.isCancelled;
   bool get isSearching => _currentRide?.isSearching ?? false;
@@ -157,7 +159,72 @@ class ActiveRideViewModel extends ChangeNotifier with ViewStateMixin {
     try {
       final updated = await rideRepo.syncRealtimeState(_currentRide!.id);
       _applyRideUpdate(updated);
+
+      if (_currentRide?.isSearching == true ||
+          _currentRide?.isDriverAssigned == true ||
+          _currentRide?.status == 'SEARCHING' ||
+          _currentRide?.status == 'DRIVER_ASSIGNED' ||
+          _currentRide?.biddingStatus == 'COUNTER_OFFERED') {
+        final offers = await rideRepo.getRideDriverOffers(_currentRide!.id);
+        _driverOffers = offers;
+        notifyListeners();
+      }
     } catch (_) {}
+  }
+
+  Future<bool> declineCounterOffer(String offerId) async {
+    if (_currentRide == null) return false;
+    try {
+      final ok = await rideRepo.declineDriverCounterOffer(_currentRide!.id, offerId);
+      _driverOffers.removeWhere((o) => o['name'] == offerId);
+      notifyListeners();
+      return ok;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> acceptCounterOffer(String offerId) async {
+    if (_currentRide == null) return false;
+    setState(ViewState.loading);
+    notifyListeners();
+
+    try {
+      final updated = await rideRepo.acceptDriverCounterOffer(_currentRide!.id, offerId);
+      _applyRideUpdate(updated);
+      _driverOffers.clear();
+      setState(ViewState.success);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      setState(ViewState.error, errorMessage: e.toString());
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateOffer(double newFare) async {
+    if (_currentRide == null) return false;
+    setState(ViewState.loading);
+    notifyListeners();
+
+    try {
+      final updated = await rideRepo.updateRideOffer(_currentRide!.id, newFare);
+      _applyRideUpdate(updated);
+      setState(ViewState.success);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      setState(ViewState.error, errorMessage: e.toString());
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> raiseOffer(double delta) async {
+    if (_currentRide == null) return false;
+    final currentFare = _currentRide!.offeredFare ?? _currentRide!.totalFare;
+    return updateOffer(currentFare + delta);
   }
 
   Future<bool> cancelRide(String reason) async {
@@ -188,6 +255,7 @@ class ActiveRideViewModel extends ChangeNotifier with ViewStateMixin {
     _searchSecondsElapsed = 0;
     _hasTriggeredAcceptedNotification = false;
     _justAcceptedRide = null;
+    _driverOffers = [];
     setState(ViewState.initial);
     notifyListeners();
   }

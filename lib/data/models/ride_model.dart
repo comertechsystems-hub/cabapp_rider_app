@@ -38,6 +38,11 @@ class RideModel extends ActiveRide {
     super.driverDistanceKm,
     super.chatMessages = const [],
     super.createdAt,
+    super.offeredFare,
+    super.agreedFare,
+    super.biddingStatus,
+    super.surgeMultiplier,
+    super.surgeReason,
   });
 
   String get rider => riderId;
@@ -121,6 +126,11 @@ class RideModel extends ActiveRide {
       createdAt: json['creation'] != null
           ? DateTime.tryParse(json['creation'])
           : (json['timestamp'] != null ? DateTime.tryParse(json['timestamp']) : null),
+      offeredFare: (json['offered_fare'] as num?)?.toDouble(),
+      agreedFare: (json['agreed_fare'] as num?)?.toDouble(),
+      biddingStatus: json['bidding_status']?.toString(),
+      surgeMultiplier: (json['surge_multiplier'] as num?)?.toDouble(),
+      surgeReason: json['surge_reason']?.toString(),
     );
   }
 

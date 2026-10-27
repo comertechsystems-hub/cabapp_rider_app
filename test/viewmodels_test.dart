@@ -155,6 +155,7 @@ class MockRideRepo implements IRideRepository {
     required String vehicleCategory,
     double? distanceKm,
     double? estimatedDurationMins,
+    double? offeredFare,
     bool autoSearch = true,
   }) async {
     return ActiveRide(
@@ -168,10 +169,48 @@ class MockRideRepo implements IRideRepository {
       destinationLat: destLat,
       destinationLng: destLng,
       vehicleCategory: vehicleCategory,
-      totalFare: 2300.0,
+      totalFare: offeredFare ?? 2300.0,
       startOtp: '8822',
     );
   }
+
+  @override
+  Future<List<Map<String, dynamic>>> getRideDriverOffers(String rideId) async => [];
+
+  @override
+  Future<ActiveRide> acceptDriverCounterOffer(String rideId, String offerId) async => ActiveRide(
+        id: rideId,
+        status: 'DRIVER_ACCEPTED',
+        riderId: 'RDR-001',
+        pickupAddress: 'A',
+        pickupLat: 1,
+        pickupLng: 1,
+        destinationAddress: 'B',
+        destinationLat: 2,
+        destinationLng: 2,
+        vehicleCategory: 'ECONOMY',
+        totalFare: 3000,
+        agreedFare: 3000,
+      );
+
+  @override
+  Future<bool> declineDriverCounterOffer(String rideId, String offerId) async => true;
+
+  @override
+  Future<ActiveRide> updateRideOffer(String rideId, double offeredFare) async => ActiveRide(
+        id: rideId,
+        status: 'SEARCHING',
+        riderId: 'RDR-001',
+        pickupAddress: 'A',
+        pickupLat: 1,
+        pickupLng: 1,
+        destinationAddress: 'B',
+        destinationLat: 2,
+        destinationLng: 2,
+        vehicleCategory: 'ECONOMY',
+        totalFare: offeredFare,
+        offeredFare: offeredFare,
+      );
 
   @override
   Future<ActiveRide> getRide(String rideId) async => ActiveRide(

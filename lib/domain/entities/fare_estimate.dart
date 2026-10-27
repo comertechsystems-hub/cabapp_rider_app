@@ -11,6 +11,14 @@ class FareEstimate {
   final double totalFare;
   final String? serviceArea;
   final String currency;
+  final double fuelPricePerLiter;
+  final double estimatedFuelCost;
+  final double totalOperatingCost;
+  final double surgeMultiplier;
+  final String? surgeReason;
+  final double recommendedFare;
+  final double minOfferedFare;
+  final double maxOfferedFare;
 
   const FareEstimate({
     required this.vehicleCategory,
@@ -24,5 +32,13 @@ class FareEstimate {
     required this.totalFare,
     this.serviceArea,
     this.currency = 'NGN',
+    this.fuelPricePerLiter = 1050.0,
+    this.estimatedFuelCost = 0.0,
+    this.totalOperatingCost = 0.0,
+    this.surgeMultiplier = 1.0,
+    this.surgeReason,
+    this.recommendedFare = 0.0,
+    this.minOfferedFare = 0.0,
+    this.maxOfferedFare = 0.0,
   });
 }

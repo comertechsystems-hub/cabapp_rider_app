@@ -21,6 +21,7 @@ abstract class IRideRepository {
     required String vehicleCategory,
     double? distanceKm,
     double? estimatedDurationMins,
+    double? offeredFare,
     bool autoSearch = true,
   });
 
@@ -35,4 +36,8 @@ abstract class IRideRepository {
     double? longitude,
     double? radiusKm,
   });
+  Future<List<Map<String, dynamic>>> getRideDriverOffers(String rideId);
+  Future<ActiveRide> acceptDriverCounterOffer(String rideId, String offerId);
+  Future<bool> declineDriverCounterOffer(String rideId, String offerId);
+  Future<ActiveRide> updateRideOffer(String rideId, double offeredFare);
 }

@@ -348,7 +348,7 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
             // Bottom Card (Scroll-safe for all Android screens)
             ConstrainedBox(
               constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.48,
+                maxHeight: MediaQuery.of(context).size.height * 0.58,
               ),
               child: Container(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
@@ -426,15 +426,319 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
                                   Text(
                                     ride.isDriverAssigned
                                         ? 'Awaiting driver mobile confirmation'
-                                        : 'Broadcasting across metropolitan drivers',
+                                        : 'Broadcasting offer across verified drivers',
                                     style: const TextStyle(fontSize: 12, color: AppColors.inkSoft),
                                   ),
                                 ],
                               ),
                             ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEAECF3),
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                              child: Text(
+                                '● ${activeVm.searchSecondsElapsed}s',
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.navy),
+                              ),
+                            ),
                           ],
                         ),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 12),
+
+                        // Rider's Current Active Bid & Fast Raise Controls
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.line),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'YOUR CURRENT BID',
+                                        style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: AppColors.inkSoft),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '₦${(ride.offeredFare ?? ride.totalFare).toStringAsFixed(0)}',
+                                        style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: AppColors.navy),
+                                      ),
+                                    ],
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.navy,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Text(
+                                      'Bidding Open',
+                                      style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              const Text(
+                                'Drivers may accept or send counter-offers. Want faster pickup? Raise your offer:',
+                                style: TextStyle(fontSize: 11, color: AppColors.inkSoft),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  ActionChip(
+                                    avatar: const Icon(Icons.arrow_upward, size: 12, color: AppColors.navy),
+                                    label: const Text('+₦200', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                    onPressed: () async {
+                                      final ok = await activeVm.raiseOffer(200);
+                                      if (ok && context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Offer raised by ₦200! Broadcasters notified.'),
+                                            duration: Duration(seconds: 2),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                  const SizedBox(width: 6),
+                                  ActionChip(
+                                    avatar: const Icon(Icons.arrow_upward, size: 12, color: AppColors.navy),
+                                    label: const Text('+₦500', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                    onPressed: () async {
+                                      final ok = await activeVm.raiseOffer(500);
+                                      if (ok && context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Offer raised by ₦500! Broadcasters notified.'),
+                                            duration: Duration(seconds: 2),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                  const SizedBox(width: 6),
+                                  ActionChip(
+                                    avatar: const Icon(Icons.arrow_upward, size: 12, color: AppColors.navy),
+                                    label: const Text('+₦1,000', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                    onPressed: () async {
+                                      final ok = await activeVm.raiseOffer(1000);
+                                      if (ok && context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Offer raised by ₦1,000! Broadcasters notified.'),
+                                            duration: Duration(seconds: 2),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Live Incoming Driver Counter-Offers List
+                        if (activeVm.driverOffers.isNotEmpty) ...[
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: AppColors.gold, width: 2),
+                              boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3))],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: const [
+                                        Icon(Icons.local_offer, color: AppColors.gold, size: 16),
+                                        SizedBox(width: 6),
+                                        Text(
+                                          'INCOMING DRIVER COUNTER-OFFERS',
+                                          style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: AppColors.ink),
+                                        ),
+                                      ],
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.goldSoft,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        '${activeVm.driverOffers.length} available',
+                                        style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: AppColors.ink),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Container(
+                                  margin: const EdgeInsets.only(top: 8, bottom: 4),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.goldSoft,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: AppColors.gold.withOpacity(0.4)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.local_gas_station, size: 14, color: AppColors.ink),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          '⛽ Fuel Benchmark: ~₦${((((ride.actualDistanceKm ?? 5.0) / 12.0) * 1050).clamp(300, 999999)).toStringAsFixed(0)} (PMS ₦1,050/L at 12 km/L) · 30s window',
+                                          style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppColors.ink),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                ...activeVm.driverOffers.map((offer) {
+                                  final pFare = (offer['proposed_fare'] as num?)?.toDouble() ?? 0.0;
+                                  final dName = offer['driver_name']?.toString() ?? 'Driver Partner';
+                                  final vModel = offer['vehicle_model']?.toString() ?? 'Cab';
+                                  final dRating = (offer['driver_rating'] as num?)?.toDouble() ?? 5.0;
+                                  final eta = (offer['eta_mins'] as num?)?.toDouble() ?? 5.0;
+                                  final note = offer['note']?.toString();
+                                  final secLeft = (offer['seconds_remaining'] as num?)?.toInt() ?? 30;
+
+                                  return Container(
+                                    margin: const EdgeInsets.only(top: 6),
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF8FAFC),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: AppColors.line),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      Text(dName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                                                      const SizedBox(width: 6),
+                                                      Container(
+                                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                                        decoration: BoxDecoration(
+                                                          color: secLeft <= 5 ? AppColors.coralSoft : AppColors.goldSoft,
+                                                          borderRadius: BorderRadius.circular(6),
+                                                        ),
+                                                        child: Text(
+                                                          '⏳ ${secLeft}s left',
+                                                          style: TextStyle(
+                                                            fontSize: 10,
+                                                            fontWeight: FontWeight.bold,
+                                                            color: secLeft <= 5 ? AppColors.coral : AppColors.ink,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    '$vModel • ⭐ ${dRating.toStringAsFixed(1)} • ~${eta.toStringAsFixed(0)} mins away',
+                                                    style: const TextStyle(fontSize: 11, color: AppColors.inkSoft),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            Text(
+                                              '₦${pFare.toStringAsFixed(0)}',
+                                              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.navy),
+                                            ),
+                                          ],
+                                        ),
+                                        if (note != null && note.isNotEmpty) ...[
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            '"$note"',
+                                            style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: AppColors.inkSoft),
+                                          ),
+                                        ],
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: SizedBox(
+                                                height: 36,
+                                                child: OutlinedButton(
+                                                  style: OutlinedButton.styleFrom(
+                                                    foregroundColor: AppColors.coral,
+                                                    side: const BorderSide(color: AppColors.coral),
+                                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                                    padding: const EdgeInsets.symmetric(vertical: 0),
+                                                  ),
+                                                  onPressed: () async {
+                                                    final offerId = offer['name']?.toString();
+                                                    if (offerId != null) {
+                                                      await activeVm.declineCounterOffer(offerId);
+                                                    }
+                                                  },
+                                                  child: const Text('Decline', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              flex: 2,
+                                              child: SizedBox(
+                                                height: 36,
+                                                child: ElevatedButton(
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor: AppColors.navy,
+                                                    foregroundColor: Colors.white,
+                                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                                    padding: const EdgeInsets.symmetric(vertical: 0),
+                                                  ),
+                                                  onPressed: () async {
+                                                    final offerId = offer['name']?.toString();
+                                                    if (offerId != null) {
+                                                      await activeVm.acceptCounterOffer(offerId);
+                                                    }
+                                                  },
+                                                  child: Text(
+                                                    'Agree & Accept (₦${pFare.toStringAsFixed(0)})',
+                                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
                       ],
                       // Assigned Driver Card + Call / Chat Actions (Displayed once driver ACCEPTS or is active)
                       if (hasAssignedDriver) ...[

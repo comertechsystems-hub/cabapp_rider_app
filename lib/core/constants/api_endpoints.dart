@@ -25,6 +25,10 @@ class ApiEndpoints {
   static const String searchDrivers = '/api/method/mobility.api.ride.search_drivers';
   static const String getRide = '/api/method/mobility.api.ride.get_ride';
   static const String cancelRide = '/api/method/mobility.api.ride.cancel_ride';
+  static const String updateRideOffer = '/api/method/mobility.api.ride.update_ride_offer';
+  static const String getRideDriverOffers = '/api/method/mobility.api.ride.get_ride_driver_offers';
+  static const String riderAcceptCounterOffer = '/api/method/mobility.api.ride.rider_accept_counter_offer';
+  static const String riderDeclineCounterOffer = '/api/method/mobility.api.ride.rider_decline_counter_offer';
   static const String confirmPayment = '/api/method/mobility.api.ride.confirm_payment';
   static const String disputeRide = '/api/method/mobility.api.ride.dispute_ride';
   static const String syncRealtimeState = '/api/method/mobility.api.ride.sync_realtime_state';
