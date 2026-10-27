@@ -8,6 +8,7 @@ import '../routes/app_routes.dart';
 import '../viewmodels/active_ride_viewmodel.dart';
 import '../viewmodels/ride_viewmodel.dart';
 import '../widgets/interactive_live_map.dart';
+import 'in_app_call_screen.dart';
 
 /// 13. Driver Arriving Screen
 class DriverArrivingScreen extends StatefulWidget {
@@ -160,12 +161,24 @@ class _DriverArrivingScreenState extends State<DriverArrivingScreen> {
                   Expanded(
                     child: Text(
                       hasArrived
-                          ? 'Your driver is waiting at the pickup spot!'
+                          ? 'Driver is waiting (${ride?.freeWaitTimeMins?.toInt() ?? 3}m free · ₦${ride?.waitTimeRateApplied?.toInt() ?? 50}/m)'
                           : 'Driver is heading towards your pickup location',
                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
                     ),
                   ),
-                  if (!hasArrived)
+                  if (hasArrived && (ride?.waitingFare ?? 0) > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade800,
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: Text(
+                        'Wait: ₦${ride!.waitingFare!.toStringAsFixed(0)}',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
+                      ),
+                    )
+                  else if (!hasArrived)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
@@ -309,12 +322,16 @@ class _DriverArrivingScreenState extends State<DriverArrivingScreen> {
                         child: OutlinedButton.icon(
                           icon: const Icon(Icons.call, size: 18, color: AppColors.navy),
                           label: const Text('Call Driver', style: TextStyle(color: AppColors.navy)),
-                          onPressed: () async {
+                          onPressed: () {
+                            final name = driver?.name ?? 'Driver';
                             final phone = driver?.phoneNumber ?? '+2348000000000';
-                            await Clipboard.setData(ClipboardData(text: phone));
-                            if (!context.mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Calling driver ($phone)...')),
+                            final vehicle = driver?.vehicleModel ?? 'CabApp Vehicle';
+                            showCallSelectionSheet(
+                              context,
+                              recipientName: name,
+                              phoneNumber: phone,
+                              recipientRole: 'Driver',
+                              vehicleInfo: vehicle,
                             );
                           },
                         ),

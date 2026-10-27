@@ -35,6 +35,10 @@ class ActiveRide {
   final String? surgeReason;
   final double? fuelPriceApplied;
   final double? fuelCostEstimated;
+  final double? waitingFare;
+  final double? waitTimeMins;
+  final double? freeWaitTimeMins;
+  final double? waitTimeRateApplied;
 
   const ActiveRide({
     required this.id,
@@ -70,6 +74,10 @@ class ActiveRide {
     this.surgeReason,
     this.fuelPriceApplied,
     this.fuelCostEstimated,
+    this.waitingFare,
+    this.waitTimeMins,
+    this.freeWaitTimeMins,
+    this.waitTimeRateApplied,
   });
 
   bool get isRequested => status == 'REQUESTED';

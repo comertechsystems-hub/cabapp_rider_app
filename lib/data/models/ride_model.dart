@@ -45,6 +45,10 @@ class RideModel extends ActiveRide {
     super.surgeReason,
     super.fuelPriceApplied,
     super.fuelCostEstimated,
+    super.waitingFare,
+    super.waitTimeMins,
+    super.freeWaitTimeMins,
+    super.waitTimeRateApplied,
   });
 
   String get rider => riderId;
@@ -137,6 +141,10 @@ class RideModel extends ActiveRide {
           (json['fuel_price_per_liter'] as num?)?.toDouble(),
       fuelCostEstimated: (json['fuel_cost_estimated'] as num?)?.toDouble() ??
           (json['estimated_fuel_cost'] as num?)?.toDouble(),
+      waitingFare: (json['waiting_fare'] as num?)?.toDouble(),
+      waitTimeMins: (json['wait_time_mins'] as num?)?.toDouble(),
+      freeWaitTimeMins: (json['free_wait_time_mins'] as num?)?.toDouble(),
+      waitTimeRateApplied: (json['wait_time_rate_applied'] as num?)?.toDouble(),
     );
   }
 

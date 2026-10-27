@@ -112,6 +112,21 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       'Pay to driver: $driverName',
                       style: const TextStyle(fontSize: 13, color: AppColors.inkSoft),
                     ),
+                    if (ride?.waitingFare != null && ride!.waitingFare! > 0) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.amber.shade300),
+                        ),
+                        child: Text(
+                          'Includes ₦${ride.waitingFare!.toStringAsFixed(0)} wait time fee (${ride.waitTimeMins?.toStringAsFixed(0) ?? '0'}m @ ₦${ride.waitTimeRateApplied?.toInt() ?? 50}/m)',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.amber.shade900),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

@@ -11,6 +11,7 @@ import '../viewmodels/support_viewmodel.dart';
 import '../widgets/interactive_live_map.dart';
 import 'payment_status_dialog.dart';
 import 'rating_dialog.dart';
+import 'in_app_call_screen.dart';
 
 class ActiveRideScreen extends StatefulWidget {
   const ActiveRideScreen({super.key});
@@ -876,12 +877,16 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
                                     'Call Driver',
                                     style: TextStyle(color: AppColors.navy, fontWeight: FontWeight.w600, fontSize: 13),
                                   ),
-                                  onPressed: () async {
+                                  onPressed: () {
+                                    final name = driver?.name ?? 'Driver';
                                     final phone = driver?.phoneNumber ?? '+2348000000000';
-                                    await Clipboard.setData(ClipboardData(text: phone));
-                                    if (!context.mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Driver phone ($phone) copied · Ready to call')),
+                                    final vehicle = driver?.vehicleModel ?? 'CabApp Vehicle';
+                                    showCallSelectionSheet(
+                                      context,
+                                      recipientName: name,
+                                      phoneNumber: phone,
+                                      recipientRole: 'Driver',
+                                      vehicleInfo: vehicle,
                                     );
                                   },
                                 ),
