@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
@@ -42,6 +41,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
   bool _hasDeviceLocation = false;
   bool _isPinningPickup = false;
   bool _isReverseGeocoding = false;
+  bool _isSelectingFare = false;
 
   bool get _isTestEnv => WidgetsBinding.instance.runtimeType.toString().contains('Test');
 
@@ -222,6 +222,9 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
     }
 
     if (_destinationController.text.trim().isNotEmpty) {
+      if (!isPickup) {
+        setState(() => _isSelectingFare = true);
+      }
       bookingVm.fetchFareEstimates();
       legacyVm.fetchFareEstimates();
     }
@@ -269,6 +272,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
     } else {
       bookingVm.setDestination(trimmed, resolvedLat, resolvedLng);
       legacyVm.setDestination(trimmed, resolvedLat, resolvedLng);
+      setState(() => _isSelectingFare = true);
     }
 
     if (_destinationController.text.trim().isNotEmpty) {
@@ -330,6 +334,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
     final selectedCat = bookingVm.selectedCategory ?? legacyVm.selectedCategory;
 
     final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+    final showStep2 = _isSelectingFare || (_isTestEnv && hasDestination);
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -523,8 +528,9 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                     ),
                   ),
 
-                  // Clean Input Card: Pickup & Destination with transparent placeholders
-                  Container(
+                  if (!showStep2) ...[
+                    // Clean Input Card: Pickup & Destination with transparent placeholders
+                    Container(
                     decoration: BoxDecoration(
                       color: const Color(0xFFF6F8FA),
                       borderRadius: BorderRadius.circular(16),
@@ -666,50 +672,75 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                     ),
                   ),
 
-                  // Quick Popular Lagos Hotspots
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.only(top: 8, bottom: 2),
+                  if (hasDestination && (!isKeyboardOpen || _isTestEnv)) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          FocusScope.of(context).unfocus();
+                          if (_destinationController.text.trim().isNotEmpty) {
+                            bookingVm.fetchFareEstimates();
+                            legacyVm.fetchFareEstimates();
+                          }
+                          setState(() => _isSelectingFare = true);
+                        },
+                        icon: const Icon(Icons.directions_car, size: 18),
+                        label: const Text(
+                          'Choose Ride & View Fares',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.navy,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+                  ],
+                ] else ...[
+                  // Step 2: Route Summary Strip with Edit Route Button
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.line),
+                    ),
                     child: Row(
                       children: [
-                        _quickDestinationChip(
-                          icon: Icons.flight,
-                          label: 'Airport (LOS)',
-                          address: 'Murtala Muhammed Airport (LOS)',
-                          lat: 6.5774,
-                          lng: 3.3212,
-                          bookingVm: bookingVm,
-                          legacyVm: legacyVm,
+                        const Icon(Icons.route, size: 20, color: AppColors.navy),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _pickupController.text.isNotEmpty ? _pickupController.text : 'Current Location',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 11.5, color: AppColors.inkSoft),
+                              ),
+                              Text(
+                                _destinationController.text.isNotEmpty ? _destinationController.text : 'Destination',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: AppColors.ink),
+                              ),
+                            ],
+                          ),
                         ),
-                        const SizedBox(width: 6),
-                        _quickDestinationChip(
-                          icon: Icons.shopping_bag_outlined,
-                          label: 'Ikeja Mall',
-                          address: 'Ikeja City Mall (ICM)',
-                          lat: 6.6189,
-                          lng: 3.3582,
-                          bookingVm: bookingVm,
-                          legacyVm: legacyVm,
-                        ),
-                        const SizedBox(width: 6),
-                        _quickDestinationChip(
-                          icon: Icons.water_drop_outlined,
-                          label: 'Lekki Phase 1',
-                          address: 'Admiralty Way, Lekki Phase 1',
-                          lat: 6.4474,
-                          lng: 3.4723,
-                          bookingVm: bookingVm,
-                          legacyVm: legacyVm,
-                        ),
-                        const SizedBox(width: 6),
-                        _quickDestinationChip(
-                          icon: Icons.location_city,
-                          label: 'Victoria Island',
-                          address: 'Victoria Island (Adeola Odeku)',
-                          lat: 6.4281,
-                          lng: 3.4219,
-                          bookingVm: bookingVm,
-                          legacyVm: legacyVm,
+                        TextButton.icon(
+                          onPressed: () => setState(() => _isSelectingFare = false),
+                          icon: const Icon(Icons.edit, size: 13, color: AppColors.navy),
+                          label: const Text('Change', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.navy)),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
                         ),
                       ],
                     ),
@@ -827,7 +858,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                                       const Icon(Icons.local_gas_station, size: 12, color: AppColors.navy),
                                       const SizedBox(width: 4),
                                       Text(
-                                        '⛽ Fuel: ~₦${((selectedCat.estimatedFuelCost > 0 ? selectedCat.estimatedFuelCost : ((selectedCat.distanceKm / 12.0) * (selectedCat.fuelPricePerLiter > 0 ? selectedCat.fuelPricePerLiter : 1050.0)))).toStringAsFixed(0)} (PMS ₦${(selectedCat.fuelPricePerLiter > 0 ? selectedCat.fuelPricePerLiter : 1050.0).toStringAsFixed(0)}/L)',
+                                        '⛽ Fuel: ~₦${((selectedCat.estimatedFuelCost > 0 ? selectedCat.estimatedFuelCost : ((selectedCat.distanceKm / 12.0) * (selectedCat.fuelPricePerLiter > 0 ? selectedCat.fuelPricePerLiter : 1400.0)))).toStringAsFixed(0)} (PMS ₦${(selectedCat.fuelPricePerLiter > 0 ? selectedCat.fuelPricePerLiter : 1400.0).toStringAsFixed(0)}/L)',
                                         style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.ink),
                                       ),
                                     ],
@@ -1050,8 +1081,9 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                     ),
                   ],
                 ],
-              ),
+              ],
             ),
+          ),
           ],
         ),
       ),
@@ -1148,58 +1180,6 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
             },
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _quickDestinationChip({
-    required IconData icon,
-    required String label,
-    required String address,
-    required double lat,
-    required double lng,
-    required RideBookingViewModel bookingVm,
-    required RideViewModel legacyVm,
-  }) {
-    final isSelected = _destinationController.text.trim() == address;
-    return InkWell(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-        setState(() {
-          _destinationController.text = address;
-          _isPinningPickup = false;
-        });
-        bookingVm.setDestination(address, lat, lng);
-        legacyVm.setDestination(address, lat, lng);
-        bookingVm.fetchFareEstimates();
-        legacyVm.fetchFareEstimates();
-      },
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFEEF2F9) : const Color(0xFFF1F5F9),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? AppColors.navy : const Color(0xFFE2E8F0),
-            width: isSelected ? 1.4 : 1,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 13, color: isSelected ? AppColors.navy : AppColors.inkSoft),
-            const SizedBox(width: 5),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11.5,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                color: isSelected ? AppColors.navy : AppColors.ink,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

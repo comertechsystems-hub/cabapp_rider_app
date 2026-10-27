@@ -17,7 +17,7 @@ class FareEstimateModel extends FareEstimate {
     required super.totalFare,
     super.serviceArea,
     super.currency = 'NGN',
-    super.fuelPricePerLiter = 1050.0,
+    super.fuelPricePerLiter = 1400.0,
     super.estimatedFuelCost = 0.0,
     super.totalOperatingCost = 0.0,
     super.surgeMultiplier = 1.0,
@@ -36,7 +36,7 @@ class FareEstimateModel extends FareEstimate {
     final timeFare = (json['time_fare'] as num?)?.toDouble() ?? 0.0;
     final subtotal = (json['subtotal'] as num?)?.toDouble() ?? (baseFare + distFare + timeFare);
     final totalFare = (json['total_fare'] as num?)?.toDouble() ?? subtotal;
-    final fuelPrice = (json['fuel_price_per_liter'] as num?)?.toDouble() ?? 1050.0;
+    final fuelPrice = (json['fuel_price_per_liter'] as num?)?.toDouble() ?? 1400.0;
     final fuelCost = (json['estimated_fuel_cost'] as num?)?.toDouble() ?? 0.0;
     final opCost = (json['total_operating_cost'] as num?)?.toDouble() ?? 0.0;
     final surgeMult = (json['surge_multiplier'] as num?)?.toDouble() ?? 1.0;

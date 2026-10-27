@@ -32,7 +32,7 @@ class FareEstimate {
     required this.totalFare,
     this.serviceArea,
     this.currency = 'NGN',
-    this.fuelPricePerLiter = 1050.0,
+    this.fuelPricePerLiter = 1400.0,
     this.estimatedFuelCost = 0.0,
     this.totalOperatingCost = 0.0,
     this.surgeMultiplier = 1.0,
