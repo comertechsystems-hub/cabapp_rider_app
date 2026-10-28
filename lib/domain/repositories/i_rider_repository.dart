@@ -9,4 +9,5 @@ abstract class IRiderRepository {
     String? emergencyContactName,
     String? emergencyContactPhone,
   });
+  Future<bool> deleteAccount({String? reason});
 }

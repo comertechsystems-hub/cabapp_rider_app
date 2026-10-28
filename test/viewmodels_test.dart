@@ -107,6 +107,9 @@ class MockRiderRepo implements IRiderRepository {
     );
     return profile;
   }
+
+  @override
+  Future<bool> deleteAccount({String? reason}) async => true;
 }
 
 class MockRideRepo implements IRideRepository {

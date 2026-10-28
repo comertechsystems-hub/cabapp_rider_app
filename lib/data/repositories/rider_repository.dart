@@ -37,4 +37,15 @@ class RiderRepository implements IRiderRepository {
     final data = res['data'] ?? res['profile'] ?? res;
     return RiderProfileModel.fromJson(data);
   }
+
+  @override
+  Future<bool> deleteAccount({String? reason}) async {
+    final res = await apiClient.post(
+      ApiEndpoints.deleteAccount,
+      body: {
+        'reason': ?reason,
+      },
+    );
+    return res['success'] == true;
+  }
 }

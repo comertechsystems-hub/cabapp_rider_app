@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_colors.dart';
+import '../routes/app_routes.dart';
+import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/rider_profile_viewmodel.dart';
 import 'emergency_contacts_screen.dart';
 import 'support_screen.dart';
@@ -155,6 +159,29 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
                               );
                             },
                           ),
+                          const SizedBox(height: 12),
+                          // Privacy Policy & Terms (App Store Compliance)
+                          _actionTile(
+                            icon: Icons.policy_outlined,
+                            iconColor: AppColors.navy,
+                            title: 'Privacy Policy & Terms',
+                            subtitle: 'Read our data privacy policy & NDPR terms',
+                            onTap: () async {
+                              final uri = Uri.parse('https://cabapp.com.ng/privacy');
+                              if (await canLaunchUrl(uri)) {
+                                await launchUrl(uri, mode: LaunchMode.externalApplication);
+                              }
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          // Delete Account (Apple App Store & Play Store Compliance)
+                          _actionTile(
+                            icon: Icons.delete_forever_outlined,
+                            iconColor: AppColors.coral,
+                            title: 'Delete Account',
+                            subtitle: 'Permanently remove your account and personal data',
+                            onTap: () => _showDeleteAccountDialog(context, vm),
+                          ),
                         ],
                       ),
                     ),
@@ -258,6 +285,95 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
             child: const Text('Save'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context, RiderProfileViewModel vm) {
+    final reasonCtrl = TextEditingController();
+    bool isDeleting = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
+              children: const [
+                Icon(Icons.warning_amber_rounded, color: AppColors.coral, size: 28),
+                SizedBox(width: 8),
+                Text('Delete Account', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.ink)),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Are you sure you want to delete your CabApp account? This action is permanent and cannot be undone.',
+                  style: TextStyle(fontSize: 13, color: AppColors.ink),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  '• Your profile data will be permanently anonymized.\n• All device tokens and session credentials will be revoked.\n• You will be immediately signed out.',
+                  style: TextStyle(fontSize: 12, color: AppColors.inkSoft, height: 1.4),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: reasonCtrl,
+                  decoration: InputDecoration(
+                    labelText: 'Reason for leaving (Optional)',
+                    labelStyle: const TextStyle(fontSize: 13),
+                    hintText: 'e.g., No longer need service',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: isDeleting ? null : () => Navigator.pop(ctx),
+                child: const Text('Cancel', style: TextStyle(color: AppColors.inkSoft)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.coral,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: isDeleting
+                    ? null
+                    : () async {
+                        setDialogState(() => isDeleting = true);
+                        final success = await vm.deleteAccount(reason: reasonCtrl.text.trim());
+                        if (!context.mounted) return;
+                        Navigator.pop(ctx);
+                        if (success) {
+                          // Logout and navigate to login screen
+                          final authVm = context.read<AuthViewModel>();
+                          await authVm.logout();
+                          if (context.mounted) {
+                            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
+                          }
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              backgroundColor: AppColors.coral,
+                              content: Text(vm.errorMessage ?? 'Failed to delete account. Active rides must be completed first.'),
+                            ),
+                          );
+                        }
+                      },
+                child: isDeleting
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text('Delete Permanently'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

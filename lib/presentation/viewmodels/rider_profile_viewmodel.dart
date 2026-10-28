@@ -53,4 +53,25 @@ class RiderProfileViewModel extends ChangeNotifier with ViewStateMixin {
       return false;
     }
   }
+
+  Future<bool> deleteAccount({String? reason}) async {
+    setState(ViewState.loading);
+    notifyListeners();
+
+    try {
+      final ok = await riderRepo.deleteAccount(reason: reason);
+      if (ok) {
+        _profile = null;
+        setState(ViewState.initial);
+      } else {
+        setState(ViewState.error, errorMessage: 'Failed to delete account');
+      }
+      notifyListeners();
+      return ok;
+    } catch (e) {
+      setState(ViewState.error, errorMessage: e.toString());
+      notifyListeners();
+      return false;
+    }
+  }
 }

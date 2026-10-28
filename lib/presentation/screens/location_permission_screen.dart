@@ -48,9 +48,9 @@ class LocationPermissionScreen extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               const Text(
-                'CabApp uses your current location to connect you with nearby verified drivers, pinpoint your exact pickup spot, and ensure ride safety.',
+                'CabApp collects location data to connect you with nearby verified drivers, pinpoint your exact pickup point, and provide real-time route tracking even when the app is in the background during an active ride. Your location data is strictly protected under NDPR/GDPR standards and never sold or used for advertising.',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 13,
                   color: AppColors.inkSoft,
                   height: 1.5,
                 ),
