@@ -168,6 +168,9 @@ class RideRepository implements IRideRepository {
     if (data is Map && data['chat_messages'] is List && rideMap['chat_messages'] == null) {
       rideMap['chat_messages'] = data['chat_messages'];
     }
+    if (data is Map && data['active_call'] is Map && rideMap['active_call'] == null) {
+      rideMap['active_call'] = data['active_call'];
+    }
     return RideModel.fromJson(rideMap);
   }
 

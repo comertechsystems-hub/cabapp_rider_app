@@ -49,6 +49,7 @@ class RideModel extends ActiveRide {
     super.waitTimeMins,
     super.freeWaitTimeMins,
     super.waitTimeRateApplied,
+    super.activeCall,
   });
 
   String get rider => riderId;
@@ -145,6 +146,7 @@ class RideModel extends ActiveRide {
       waitTimeMins: (json['wait_time_mins'] as num?)?.toDouble(),
       freeWaitTimeMins: (json['free_wait_time_mins'] as num?)?.toDouble(),
       waitTimeRateApplied: (json['wait_time_rate_applied'] as num?)?.toDouble(),
+      activeCall: json['active_call'] is Map ? Map<String, dynamic>.from(json['active_call'] as Map) : null,
     );
   }
 

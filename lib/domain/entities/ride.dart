@@ -39,6 +39,7 @@ class ActiveRide {
   final double? waitTimeMins;
   final double? freeWaitTimeMins;
   final double? waitTimeRateApplied;
+  final Map<String, dynamic>? activeCall;
 
   const ActiveRide({
     required this.id,
@@ -78,6 +79,7 @@ class ActiveRide {
     this.waitTimeMins,
     this.freeWaitTimeMins,
     this.waitTimeRateApplied,
+    this.activeCall,
   });
 
   bool get isRequested => status == 'REQUESTED';

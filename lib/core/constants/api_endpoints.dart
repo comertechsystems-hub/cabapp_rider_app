@@ -36,6 +36,10 @@ class ApiEndpoints {
   static const String getRideStatusLogs = '/api/method/mobility.api.ride.get_ride_status_logs';
   static const String sendRideMessage = '/api/method/mobility.api.ride.send_ride_message';
   static const String getRideMessages = '/api/method/mobility.api.ride.get_ride_messages';
+  static const String initiateInAppCall = '/api/method/mobility.api.ride.initiate_in_app_call';
+  static const String answerInAppCall = '/api/method/mobility.api.ride.answer_in_app_call';
+  static const String endInAppCall = '/api/method/mobility.api.ride.end_in_app_call';
+  static const String getCallStatus = '/api/method/mobility.api.ride.get_call_status';
 
   // Payment Recording & Confirmation
   static const String createPayment = '/api/method/mobility.api.payment.create_payment';

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../domain/entities/ride.dart';
 import '../viewmodels/active_ride_viewmodel.dart';
 import '../viewmodels/payment_status_viewmodel.dart';
 import '../viewmodels/rating_viewmodel.dart';
@@ -25,6 +26,33 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
   String? _lastNotifiedAcceptedRideId;
   String? _lastNotifiedOfferId;
   bool _showAcceptanceBanner = false;
+  String? _handledIncomingCallId;
+
+  void _checkIncomingCall(ActiveRide ride) {
+    final activeCall = ride.activeCall;
+    if (activeCall != null &&
+        activeCall['status']?.toString().toUpperCase() == 'RINGING' &&
+        activeCall['caller_role']?.toString().toUpperCase() == 'DRIVER') {
+      final callId = activeCall['call_id']?.toString() ?? '';
+      if (callId.isNotEmpty && callId != _handledIncomingCallId) {
+        _handledIncomingCallId = callId;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          showIncomingCallDialog(
+            context,
+            callerName: activeCall['caller_name']?.toString() ?? ride.driverName ?? 'Driver',
+            callerRole: 'Driver',
+            callerPhone: activeCall['caller_phone']?.toString() ?? ride.driverDetails?.phoneNumber ?? '',
+            rideId: ride.id,
+            callId: callId,
+            vehicleInfo: ride.driverDetails?.vehicleModel ?? 'CabApp Partner',
+          );
+        });
+      }
+    } else if (activeCall == null || activeCall['status']?.toString().toUpperCase() != 'RINGING') {
+      _handledIncomingCallId = null;
+    }
+  }
 
   @override
   void initState() {
@@ -54,6 +82,10 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
 
     // Support both activeVm and legacy rideVm
     final ride = activeVm.currentRide ?? legacyRideVm.currentRide;
+
+    if (ride != null) {
+      _checkIncomingCall(ride);
+    }
 
     if (ride == null) {
       return Scaffold(
@@ -882,11 +914,12 @@ class _ActiveRideScreenState extends State<ActiveRideScreen> {
                                     final phone = driver?.phoneNumber ?? '+2348000000000';
                                     final vehicle = driver?.vehicleModel ?? 'CabApp Vehicle';
                                     showCallSelectionSheet(
-                                      context,
+                                      context: context,
                                       recipientName: name,
                                       phoneNumber: phone,
                                       recipientRole: 'Driver',
                                       vehicleInfo: vehicle,
+                                      rideId: ride.id,
                                     );
                                   },
                                 ),
