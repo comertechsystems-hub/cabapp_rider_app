@@ -22,7 +22,15 @@ class NotificationClientService {
 
   void startLivePushSync() {
     if (_isTestEnv || _pollTimer != null) return;
-    _ensureDeviceTokenRegistered();
+    NotificationService.instance.initialize().then((_) {
+      final fcmToken = NotificationService.instance.fcmHandler.currentToken;
+      if (fcmToken != null && fcmToken.isNotEmpty) {
+        sessionManager.saveFcmToken(fcmToken);
+      }
+      _ensureDeviceTokenRegistered();
+    }).catchError((_) {
+      _ensureDeviceTokenRegistered();
+    });
     _pollTimer = Timer.periodic(const Duration(seconds: 4), (_) {
       _pollPushNotifications();
     });

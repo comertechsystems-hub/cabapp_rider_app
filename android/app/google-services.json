@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "947951165547",
+    "project_id": "cabapp-512c5",
+    "storage_bucket": "cabapp-512c5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:947951165547:android:c1cd1525d249d4ec62d12e",
+        "android_client_info": {
+          "package_name": "com.cabapp.rider"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBJ1_NCxis7Rw5gD1mdReis0kC_8N-jbBE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
