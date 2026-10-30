@@ -20,6 +20,7 @@ mixin ViewStateMixin {
   bool get isSuccess => _state == ViewState.success;
   bool get isEmpty => _state == ViewState.empty;
   bool get isError => _state == ViewState.error;
+  bool get hasError => _state == ViewState.error || _errorMessage != null;
 
   void setState(ViewState state, {String? errorMessage}) {
     _state = state;
