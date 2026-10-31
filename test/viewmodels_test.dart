@@ -231,6 +231,9 @@ class MockRideRepo implements IRideRepository {
       );
 
   @override
+  Future<ActiveRide?> getMyActiveRide() async => null;
+
+  @override
   Future<ActiveRide> syncRealtimeState(String rideId) async => ActiveRide(
         id: rideId,
         status: 'DRIVER_ARRIVED',
@@ -598,7 +601,48 @@ void main() {
       expect(vm.driverLocation?.latitude, 6.4250);
       expect(vm.driverLocation?.speedKmh, 35.0);
     });
+
+    test('restoreActiveRide authoritatively recovers active ride from repository', () async {
+      final repo = _RestoreMockRideRepo();
+      final vm = ActiveRideViewModel(rideRepo: repo);
+
+      expect(vm.hasActiveRide, isFalse);
+      final restored = await vm.restoreActiveRide();
+      expect(restored, isNotNull);
+      expect(vm.hasActiveRide, isTrue);
+      expect(vm.currentRide?.id, 'RD-RECOVERED');
+      expect(vm.currentRide?.status, 'DRIVER_ACCEPTED');
+      expect(vm.driverDetails?.name, 'Amina Bello');
+    });
   });
+
+class _RestoreMockRideRepo extends MockRideRepo {
+  @override
+  Future<ActiveRide?> getMyActiveRide() async => const ActiveRide(
+        id: 'RD-RECOVERED',
+        status: 'DRIVER_ACCEPTED',
+        riderId: 'RDR-001',
+        pickupAddress: 'Victoria Island',
+        pickupLat: 6.4281,
+        pickupLng: 3.4219,
+        destinationAddress: 'Lekki Phase 1',
+        destinationLat: 6.4474,
+        destinationLng: 3.4723,
+        vehicleCategory: 'ECONOMY',
+        totalFare: 2500,
+        startOtp: '4411',
+        driverDetails: DriverDetails(
+          id: 'DRV-99',
+          name: 'Amina Bello',
+          phoneNumber: '+2348123456789',
+          vehicleMake: 'Honda',
+          vehicleModel: 'City',
+          vehicleColor: 'Blue',
+          licensePlate: 'ABC-777-ZZ',
+          vehicleCategory: 'ECONOMY',
+        ),
+      );
+}
 
   group('PaymentStatusViewModel, RatingViewModel, TripHistoryViewModel', () {
     test('PaymentStatusViewModel handles direct P2P confirmation and dispute', () async {

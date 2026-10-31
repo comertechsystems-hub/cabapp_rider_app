@@ -155,6 +155,23 @@ class RideRepository implements IRideRepository {
   }
 
   @override
+  Future<ActiveRide?> getMyActiveRide() async {
+    try {
+      final res = await apiClient.get(ApiEndpoints.getMyActiveRide);
+      if (res is Map) {
+        final data = res['data'] ?? res;
+        if (data is Map && data['has_active_ride'] == true && data['ride'] is Map) {
+          final rideMap = Map<String, dynamic>.from(data['ride'] as Map);
+          return RideModel.fromJson(rideMap);
+        }
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
   Future<RideModel> syncRealtimeState(String rideId) async {
     final res = await apiClient.get(
       ApiEndpoints.syncRealtimeState,

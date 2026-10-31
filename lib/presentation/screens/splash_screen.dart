@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../routes/app_routes.dart';
+import '../viewmodels/active_ride_viewmodel.dart';
 import '../viewmodels/auth_viewmodel.dart';
 
 /// 1. Splash Screen
@@ -42,10 +43,14 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     _navTimer = Timer(const Duration(milliseconds: 1800), _checkAuthAndNavigate);
   }
 
-  void _checkAuthAndNavigate() {
+  Future<void> _checkAuthAndNavigate() async {
     if (!mounted) return;
     final authVm = context.read<AuthViewModel>();
     if (authVm.isAuthenticated) {
+      try {
+        await context.read<ActiveRideViewModel>().restoreActiveRide();
+      } catch (_) {}
+      if (!mounted) return;
       Navigator.pushReplacementNamed(context, AppRoutes.home);
     } else {
       Navigator.pushReplacementNamed(context, AppRoutes.login);

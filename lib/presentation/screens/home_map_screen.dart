@@ -123,6 +123,10 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
 
       _fetchNearbyDrivers();
 
+      if (!_isTestEnv) {
+        context.read<ActiveRideViewModel>().restoreActiveRide();
+      }
+
       // Acquire actual device GPS coordinates and reverse-geocode street address
       if (!_isTestEnv) {
         DeviceLocationService.getCurrentPosition().then((pos) async {

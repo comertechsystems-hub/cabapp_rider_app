@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import '../../core/services/realtime_service.dart';
 import '../../core/state/view_state.dart';
+import '../../core/storage/session_manager.dart';
 import '../../domain/entities/driver_details.dart';
 import '../../domain/entities/driver_location.dart';
 import '../../domain/entities/ride.dart';
@@ -11,6 +12,7 @@ import '../../domain/repositories/i_ride_repository.dart';
 class ActiveRideViewModel extends ChangeNotifier with ViewStateMixin {
   final IRideRepository rideRepo;
   final IRealtimeService? realtimeService;
+  final SessionManager? sessionManager;
 
   ActiveRide? _currentRide;
   DriverLocationEvent? _driverLocation;
@@ -22,10 +24,12 @@ class ActiveRideViewModel extends ChangeNotifier with ViewStateMixin {
   bool _hasTriggeredAcceptedNotification = false;
   ActiveRide? _justAcceptedRide;
   List<Map<String, dynamic>> _driverOffers = [];
+  bool _isRestoring = false;
 
   ActiveRideViewModel({
     required this.rideRepo,
     this.realtimeService,
+    this.sessionManager,
   }) {
     _subscribeToRealtime();
   }
@@ -35,6 +39,7 @@ class ActiveRideViewModel extends ChangeNotifier with ViewStateMixin {
   int get searchSecondsElapsed => _searchSecondsElapsed;
   ActiveRide? get justAcceptedRide => _justAcceptedRide;
   List<Map<String, dynamic>> get driverOffers => _driverOffers;
+  bool get isRestoring => _isRestoring;
 
   bool get hasActiveRide => _currentRide != null && !_currentRide!.isCancelled;
   bool get isSearching => _currentRide?.isSearching ?? false;
@@ -95,13 +100,72 @@ class ActiveRideViewModel extends ChangeNotifier with ViewStateMixin {
     _hasTriggeredAcceptedNotification = ride.isDriverAccepted || ride.isDriverOnTheWay;
 
     if (!ride.isCompleted && !ride.isCancelled) {
+      sessionManager?.saveActiveRide(ride.id, ride.status);
       _startActivePolling();
     } else {
+      sessionManager?.clearActiveRide();
       _stopActivePolling();
     }
 
     setState(ViewState.success);
     notifyListeners();
+  }
+
+  /// Authoritatively recovers any in-progress ride from backend or local session on app launch/resume.
+  Future<ActiveRide?> restoreActiveRide() async {
+    if (_currentRide != null && !_currentRide!.isCancelled && !_currentRide!.isCompleted) {
+      return _currentRide;
+    }
+
+    if (_isRestoring) return _currentRide;
+    _isRestoring = true;
+
+    try {
+      // 1. Authoritative check from backend endpoint
+      ActiveRide? active = await rideRepo.getMyActiveRide();
+
+      // 2. Fallback check using cached active ride ID
+      if (active == null && sessionManager?.activeRideId != null) {
+        final cachedId = sessionManager!.activeRideId!;
+        try {
+          active = await rideRepo.syncRealtimeState(cachedId);
+          if (active.isCancelled || active.isCompleted) {
+            await sessionManager?.clearActiveRide();
+            active = null;
+          }
+        } catch (_) {
+          await sessionManager?.clearActiveRide();
+        }
+      }
+
+      if (active != null && !active.isCancelled && !active.isCompleted) {
+        _currentRide = active;
+        await sessionManager?.saveActiveRide(active.id, active.status);
+        realtimeService?.listenToRide(active.id);
+
+        if (active.driverLat != null && active.driverLng != null) {
+          _driverLocation = DriverLocationEvent(
+            rideId: active.id,
+            driverId: active.driverId ?? '',
+            latitude: active.driverLat!,
+            longitude: active.driverLng!,
+            recordedAt: DateTime.now(),
+          );
+        }
+
+        _startActivePolling();
+        setState(ViewState.success);
+        notifyListeners();
+        return active;
+      } else {
+        await sessionManager?.clearActiveRide();
+      }
+      return null;
+    } catch (_) {
+      return null;
+    } finally {
+      _isRestoring = false;
+    }
   }
 
   void _startActivePolling() {
@@ -148,7 +212,10 @@ class ActiveRideViewModel extends ChangeNotifier with ViewStateMixin {
     }
 
     if (updated.isCompleted || updated.isCancelled) {
+      sessionManager?.clearActiveRide();
       _stopActivePolling();
+    } else {
+      sessionManager?.saveActiveRide(updated.id, updated.status);
     }
 
     notifyListeners();
@@ -236,6 +303,7 @@ class ActiveRideViewModel extends ChangeNotifier with ViewStateMixin {
     try {
       final cancelled = await rideRepo.cancelRide(_currentRide!.id, reason: reason);
       _currentRide = cancelled;
+      await sessionManager?.clearActiveRide();
       _stopActivePolling();
       setState(ViewState.success);
       notifyListeners();
@@ -250,6 +318,7 @@ class ActiveRideViewModel extends ChangeNotifier with ViewStateMixin {
   void reset() {
     _stopActivePolling();
     realtimeService?.stopListeningToRide();
+    sessionManager?.clearActiveRide();
     _currentRide = null;
     _driverLocation = null;
     _searchSecondsElapsed = 0;

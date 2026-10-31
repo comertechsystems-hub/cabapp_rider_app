@@ -25,6 +25,7 @@ class ApiEndpoints {
   static const String requestRide = '/api/method/mobility.api.ride.request_ride';
   static const String searchDrivers = '/api/method/mobility.api.ride.search_drivers';
   static const String getRide = '/api/method/mobility.api.ride.get_ride';
+  static const String getMyActiveRide = '/api/method/mobility.api.ride.get_my_active_ride';
   static const String cancelRide = '/api/method/mobility.api.ride.cancel_ride';
   static const String updateRideOffer = '/api/method/mobility.api.ride.update_ride_offer';
   static const String getRideDriverOffers = '/api/method/mobility.api.ride.get_ride_driver_offers';

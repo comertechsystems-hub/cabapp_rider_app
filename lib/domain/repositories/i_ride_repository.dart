@@ -26,6 +26,7 @@ abstract class IRideRepository {
   });
 
   Future<ActiveRide> getRide(String rideId);
+  Future<ActiveRide?> getMyActiveRide();
   Future<ActiveRide> syncRealtimeState(String rideId);
   Future<ActiveRide> cancelRide(String rideId, {required String reason});
   Future<List<TripHistoryItem>> getTripHistory();

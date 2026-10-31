@@ -63,7 +63,11 @@ void main() async {
         ChangeNotifierProvider(create: (_) => RiderProfileViewModel(riderRepo: riderRepo)),
         ChangeNotifierProvider(create: (_) => RideBookingViewModel(rideRepo: rideRepo)),
         ChangeNotifierProvider(
-          create: (_) => ActiveRideViewModel(rideRepo: rideRepo, realtimeService: realtimeService),
+          create: (_) => ActiveRideViewModel(
+            rideRepo: rideRepo,
+            realtimeService: realtimeService,
+            sessionManager: sessionManager,
+          ),
         ),
         ChangeNotifierProvider(create: (_) => RideViewModel(rideRepo)),
         ChangeNotifierProvider(create: (_) => PaymentStatusViewModel(paymentRepo: paymentRepo)),
