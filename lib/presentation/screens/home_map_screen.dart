@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/notifications/models/app_notification.dart';
+import '../../core/notifications/notification_service.dart';
 import '../../data/models/fare_estimate_model.dart';
 import '../../domain/repositories/i_ride_repository.dart';
 import '../viewmodels/active_ride_viewmodel.dart';
@@ -35,6 +37,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
 
   List<Map<String, dynamic>> _nearbyDrivers = [];
   Timer? _nearbyTimer;
+  StreamSubscription<AppNotification>? _notificationSubscription;
 
   double _myLat = 6.4281;
   double _myLng = 3.4219;
@@ -48,6 +51,42 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
   @override
   void initState() {
     super.initState();
+    _notificationSubscription = NotificationService.instance.notificationStream.listen((notif) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.navy,
+          duration: const Duration(seconds: 4),
+          content: Row(
+            children: [
+              const Icon(Icons.notifications_active, color: AppColors.gold, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      notif.title,
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 13),
+                    ),
+                    if (notif.body.isNotEmpty)
+                      Text(
+                        notif.body,
+                        style: const TextStyle(color: Colors.white70, fontSize: 11.5),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
+
     // In test environment, pre-seed test coordinates so widget tests pass seamlessly.
     // In live mode, initialize destination empty with transparent placeholder.
     final initialPickup = _isTestEnv ? 'Victoria Island (Adeola Odeku)' : '';
@@ -129,6 +168,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
 
   @override
   void dispose() {
+    _notificationSubscription?.cancel();
     _nearbyTimer?.cancel();
     _pickupController.dispose();
     _destinationController.dispose();
