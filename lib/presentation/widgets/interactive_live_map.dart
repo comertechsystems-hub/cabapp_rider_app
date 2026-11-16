@@ -652,7 +652,7 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
               urlTemplate: 'https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
               subdomains: const ['0', '1', '2', '3'],
               fallbackUrl: 'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
-              userAgentPackageName: 'com.launchgrid.cabapp',
+              userAgentPackageName: 'com.cabapp.mobility',
               tileDisplay: const TileDisplay.fadeIn(duration: Duration(milliseconds: 150)),
               maxZoom: 20.0,
             ),
