@@ -110,12 +110,12 @@ void main() {
   }
 
   group('All 19 Screens End-to-End Coverage', () {
-    testWidgets('Screen 1 (Splash) renders branding and LaunchGird label', (tester) async {
+    testWidgets('Screen 1 (Splash) renders branding and CabApp Technologies label', (tester) async {
       await tester.pumpWidget(buildApp(const SplashScreen()));
       await tester.pump();
 
       expect(find.byType(Image), findsOneWidget);
-      expect(find.text('A product by LaunchGird Limited'), findsOneWidget);
+      expect(find.text('A product by CabApp Technologies Limited'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });

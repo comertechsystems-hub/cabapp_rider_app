@@ -104,7 +104,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   ),
                   const SizedBox(height: 32),
                   const Text(
-                    'A product by LaunchGird Limited',
+                    'A product by CabApp Technologies Limited',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.white54,
