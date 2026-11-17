@@ -27,9 +27,9 @@ class NotificationClientService {
       if (fcmToken != null && fcmToken.isNotEmpty) {
         sessionManager.saveFcmToken(fcmToken);
       }
-      _ensureDeviceTokenRegistered();
+      ensureDeviceTokenRegistered();
     }).catchError((_) {
-      _ensureDeviceTokenRegistered();
+      ensureDeviceTokenRegistered();
     });
     _pollTimer = Timer.periodic(const Duration(seconds: 4), (_) {
       _pollPushNotifications();
