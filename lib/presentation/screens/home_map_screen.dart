@@ -444,9 +444,10 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
             child: Material(
               color: const Color(0xFFF1F5F9),
               shape: const CircleBorder(),
-              child: InkWell(
-                customBorder: const CircleBorder(),
+              child: IconButton(
+                icon: const Icon(Icons.history_rounded, color: AppColors.navy, size: 20),
                 tooltip: 'Trip History',
+                splashRadius: 20,
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -455,10 +456,6 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                     ),
                   );
                 },
-                child: const Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: Icon(Icons.history_rounded, color: AppColors.navy, size: 20),
-                ),
               ),
             ),
           ),
@@ -467,9 +464,10 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
             child: Material(
               color: const Color(0xFFF1F5F9),
               shape: const CircleBorder(),
-              child: InkWell(
-                customBorder: const CircleBorder(),
+              child: IconButton(
+                icon: const Icon(Icons.person_rounded, color: AppColors.navy, size: 20),
                 tooltip: 'Profile',
+                splashRadius: 20,
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -478,10 +476,6 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                     ),
                   );
                 },
-                child: const Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: Icon(Icons.person_rounded, color: AppColors.navy, size: 20),
-                ),
               ),
             ),
           ),
