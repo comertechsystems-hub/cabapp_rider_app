@@ -335,14 +335,11 @@ class _SearchingScreenState extends State<SearchingScreen> with SingleTickerProv
                             const SizedBox(width: 6),
                             Builder(
                               builder: (ctx) {
-                                final fPrice = ride?.fuelPriceApplied ?? 1400.0;
-                                final fCost = (ride?.fuelCostEstimated != null && ride!.fuelCostEstimated! > 0)
-                                    ? ride.fuelCostEstimated!
-                                    : (((ride?.actualDistanceKm ?? 5.0) / 12.0) * fPrice);
+                                final fPrice = ride?.fuelPriceApplied ?? 1050.0;
                                 return Expanded(
                                   child: Text(
-                                    '⛽ Fuel Benchmark: ~₦${fCost.clamp(300, 999999).toStringAsFixed(0)} (PMS ₦${fPrice.toStringAsFixed(0)}/L at 12 km/L) · 30s window',
-                                    style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppColors.ink),
+                                    '⛽ Current Fuel Price: ₦${fPrice.toStringAsFixed(0)}/L',
+                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.ink),
                                   ),
                                 );
                               },
@@ -386,15 +383,15 @@ class _SearchingScreenState extends State<SearchingScreen> with SingleTickerProv
                                             ),
                                             const SizedBox(width: 6),
                                             Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
                                               decoration: BoxDecoration(
                                                 color: secLeft <= 5 ? AppColors.coralSoft : AppColors.goldSoft,
-                                                borderRadius: BorderRadius.circular(6),
+                                                borderRadius: BorderRadius.circular(10),
                                               ),
                                               child: Text(
-                                                '⏳ ${secLeft}s left',
+                                                '⏱️ ${secLeft}s',
                                                 style: TextStyle(
-                                                  fontSize: 10,
+                                                  fontSize: 10.5,
                                                   fontWeight: FontWeight.bold,
                                                   color: secLeft <= 5 ? AppColors.coral : AppColors.ink,
                                                 ),

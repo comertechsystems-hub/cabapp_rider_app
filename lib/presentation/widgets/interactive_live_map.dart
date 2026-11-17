@@ -570,20 +570,25 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
                       color: const Color(0xFF2563EB).withValues(alpha: (1.0 - _pulseAnimation.value) * 0.4),
                     ),
                   ),
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E3A8A),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2.5),
-                      boxShadow: const [
-                        BoxShadow(color: Colors.black38, blurRadius: 6, offset: Offset(0, 2)),
-                      ],
-                    ),
-                    child: Transform.rotate(
-                      angle: _driverBearingRadians,
-                      child: const Icon(Icons.directions_car, color: Colors.white, size: 20),
+                  Transform.rotate(
+                    angle: _driverBearingRadians,
+                    child: SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: Image.asset(
+                        'assets/images/vehicle_map_marker.png',
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1E3A8A),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2.5),
+                          ),
+                          child: const Icon(Icons.directions_car, color: Colors.white, size: 20),
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -603,22 +608,23 @@ class _InteractiveLiveMapState extends State<InteractiveLiveMap> with TickerProv
           markers.add(
             Marker(
               point: LatLng(dLat, dLng),
-              width: 32,
-              height: 32,
+              width: 34,
+              height: 34,
               child: Tooltip(
                 message: '${d['first_name'] ?? 'Driver'} · ${d['vehicle_category'] ?? 'Cab'}',
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1E3A8A),
-                    shape: BoxShape.circle,
-                    boxShadow: const [
-                      BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
-                    ],
-                    border: Border.all(color: Colors.white, width: 2),
+                child: Image.asset(
+                  'assets/images/vehicle_map_marker.png',
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E3A8A),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: const Icon(Icons.directions_car, color: Colors.white, size: 16),
                   ),
-                  child: const Icon(Icons.directions_car, color: Colors.white, size: 16),
                 ),
               ),
             ),

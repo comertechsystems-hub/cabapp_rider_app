@@ -93,6 +93,8 @@ class _InAppCallScreenState extends State<InAppCallScreen> with SingleTickerProv
         _startTimer();
         HapticFeedback.mediumImpact();
       }
+      // Ensure incoming recipient also actively polls so when caller hangs up, call terminates immediately
+      _startStatusPolling();
     } else {
       // Outgoing call initiation
       if (widget.rideId != null && client != null) {
@@ -181,9 +183,12 @@ class _InAppCallScreenState extends State<InAppCallScreen> with SingleTickerProv
           } else if (status == 'ENDED') {
             _handleCallTerminated('Call Ended');
           }
-        } else if (res is Map && res['active_call'] == null && _callState == InAppCallState.ringing && _ringingSeconds > 5) {
-          // No active call record, declined
-          _handleCallTerminated('Call Declined');
+        } else if (res is Map && res['active_call'] == null) {
+          if (_callState == InAppCallState.connected || _callState == InAppCallState.connecting) {
+            _handleCallTerminated('Call Ended');
+          } else if (_callState == InAppCallState.ringing && _ringingSeconds > 5) {
+            _handleCallTerminated('Call Declined');
+          }
         }
       } catch (_) {}
     });

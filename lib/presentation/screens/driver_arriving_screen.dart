@@ -9,6 +9,7 @@ import '../routes/app_routes.dart';
 import '../viewmodels/active_ride_viewmodel.dart';
 import '../viewmodels/ride_viewmodel.dart';
 import '../widgets/interactive_live_map.dart';
+import '../widgets/realistic_vehicle_card.dart';
 import 'in_app_call_screen.dart';
 
 /// 13. Driver Arriving Screen
@@ -295,6 +296,17 @@ class _DriverArrivingScreenState extends State<DriverArrivingScreen> {
                     ),
                     const SizedBox(height: 16),
                   ],
+
+                  // Realistic Arriving Vehicle Card
+                  RealisticVehicleCard(
+                    compact: true,
+                    category: ride?.vehicleCategory ?? driver?.vehicleCategory,
+                    make: driver?.vehicleMake,
+                    model: driver?.vehicleModel ?? driver?.vehicleDescription,
+                    color: driver?.vehicleColor,
+                    licensePlate: driver?.licensePlate,
+                  ),
+                  const SizedBox(height: 12),
 
                   // Driver Details Row
                   Row(

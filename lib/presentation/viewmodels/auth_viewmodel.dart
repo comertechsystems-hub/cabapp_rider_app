@@ -3,11 +3,13 @@ import '../../core/state/view_state.dart';
 import '../../domain/entities/rider_profile.dart';
 import '../../domain/repositories/i_auth_repository.dart';
 import '../../data/models/user_profile_model.dart';
+import '../../data/services/notification_client_service.dart';
 
 enum AuthState { initial, loading, otpSent, authenticated, error }
 
 class AuthViewModel extends ChangeNotifier with ViewStateMixin {
   final IAuthRepository authRepo;
+  final NotificationClientService? notificationService;
 
   AuthState _state = AuthState.initial;
   RiderProfile? _profile;
@@ -16,7 +18,7 @@ class AuthViewModel extends ChangeNotifier with ViewStateMixin {
   String? _fullName;
   bool _emailNotified = false;
 
-  AuthViewModel(this.authRepo) {
+  AuthViewModel(this.authRepo, {this.notificationService}) {
     _checkInitialAuth();
   }
 
@@ -154,6 +156,9 @@ class AuthViewModel extends ChangeNotifier with ViewStateMixin {
       _state = AuthState.authenticated;
       setState(ViewState.success);
       notifyListeners();
+      try {
+        notificationService?.ensureDeviceTokenRegistered(force: true);
+      } catch (_) {}
       return true;
     } catch (e) {
       _state = AuthState.error;
@@ -175,6 +180,9 @@ class AuthViewModel extends ChangeNotifier with ViewStateMixin {
   }
 
   Future<void> logout() async {
+    try {
+      await notificationService?.unregisterDeviceToken();
+    } catch (_) {}
     await authRepo.logout();
     _profile = null;
     _phoneNumber = null;

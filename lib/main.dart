@@ -59,7 +59,7 @@ void main() async {
         Provider<RatingsRepository>.value(value: ratingsRepo),
         Provider<SupportRepository>.value(value: supportRepo),
         // ViewModels
-        ChangeNotifierProvider(create: (_) => AuthViewModel(authRepo)),
+        ChangeNotifierProvider(create: (_) => AuthViewModel(authRepo, notificationService: notificationService)),
         ChangeNotifierProvider(create: (_) => RiderProfileViewModel(riderRepo: riderRepo)),
         ChangeNotifierProvider(create: (_) => RideBookingViewModel(rideRepo: rideRepo)),
         ChangeNotifierProvider(

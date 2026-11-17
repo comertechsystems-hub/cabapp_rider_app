@@ -41,8 +41,8 @@ class NotificationClientService {
     _pollTimer = null;
   }
 
-  Future<void> _ensureDeviceTokenRegistered() async {
-    if (_tokenRegistered || !sessionManager.isAuthenticated) return;
+  Future<void> ensureDeviceTokenRegistered({bool force = false}) async {
+    if ((_tokenRegistered && !force) || !sessionManager.isAuthenticated) return;
     final token = sessionManager.fcmToken ??
         'fcm_android_rider_${sessionManager.phone?.replaceAll('+', '') ?? DateTime.now().millisecondsSinceEpoch}';
     await registerDeviceToken(fcmToken: token, platform: 'Android');
@@ -52,16 +52,15 @@ class NotificationClientService {
   Future<void> _pollPushNotifications() async {
     if (!sessionManager.isAuthenticated) return;
     if (!_tokenRegistered) {
-      await _ensureDeviceTokenRegistered();
+      await ensureDeviceTokenRegistered();
     }
     try {
       final response = await apiClient.get(
         '/api/method/mobility.api.notification.get_my_notifications',
-        queryParams: {'limit': '5'},
+        queryParams: {'limit': '10'},
       );
       final data = response['data'] ?? (response['message'] is Map ? response['message']['data'] : null);
       if (data is List && data.isNotEmpty) {
-        // Seed initial seen set on first poll so historical items don't pop up all at once
         final isInitialSeed = _deliveredEventIds.isEmpty;
         for (final item in data.reversed) {
           if (item is Map) {
@@ -69,7 +68,19 @@ class NotificationClientService {
             final eventId = map['event_id']?.toString() ?? '';
             if (eventId.isEmpty || _deliveredEventIds.contains(eventId)) continue;
             _deliveredEventIds.add(eventId);
-            if (!isInitialSeed) {
+
+            // Deliver if runtime event OR if timestamp is within the last 180 seconds
+            bool shouldDeliver = !isInitialSeed;
+            if (isInitialSeed && map['timestamp'] != null) {
+              try {
+                final ts = DateTime.parse(map['timestamp'].toString());
+                if (DateTime.now().difference(ts).inSeconds.abs() < 180) {
+                  shouldDeliver = true;
+                }
+              } catch (_) {}
+            }
+
+            if (shouldDeliver) {
               NotificationService.instance.handleIncomingPayload(
                 {
                   'message_id': eventId,

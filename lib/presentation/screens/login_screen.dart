@@ -93,7 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'CabApp Mobility',
+                          'CabApp',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -101,7 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         Text(
-                          'Peer-to-Peer Mobility • Nigeria',
+                          'Your Daily Ride • Nigeria',
                           style: TextStyle(
                             fontSize: 11,
                             color: AppColors.inkSoft,

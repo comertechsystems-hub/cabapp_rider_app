@@ -385,44 +385,105 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.asset('assets/images/icon.png', width: 28, height: 28, fit: BoxFit.cover),
+        centerTitle: true,
+        leading: Builder(
+          builder: (ctx) => Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Material(
+              color: const Color(0xFFF1F5F9),
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () => Scaffold.of(ctx).openDrawer(),
+                child: const Center(
+                  child: Icon(Icons.menu_rounded, color: AppColors.navy, size: 22),
+                ),
+              ),
             ),
-            const SizedBox(width: 8),
-            const Text(
-              'CabApp',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.navy, letterSpacing: -0.3),
-            ),
-          ],
+          ),
+        ),
+        title: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(100),
+            border: Border.all(color: AppColors.line),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: Image.asset('assets/images/icon.png', width: 22, height: 22, fit: BoxFit.cover),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'CabApp',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppColors.navy, letterSpacing: -0.2),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF10B981),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 4),
+              const Text(
+                'Lagos',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.inkSoft),
+              ),
+            ],
+          ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.history, color: AppColors.ink),
-            tooltip: 'Trip History',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => TripHistoryScreen(historyVm: context.read<TripHistoryViewModel>()),
+          Padding(
+            padding: const EdgeInsets.only(right: 6.0),
+            child: Material(
+              color: const Color(0xFFF1F5F9),
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                tooltip: 'Trip History',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => TripHistoryScreen(historyVm: context.read<TripHistoryViewModel>()),
+                    ),
+                  );
+                },
+                child: const Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: Icon(Icons.history_rounded, color: AppColors.navy, size: 20),
                 ),
-              );
-            },
+              ),
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.person_outline, color: AppColors.ink),
-            tooltip: 'Profile',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => RiderProfileScreen(profileVm: context.read<RiderProfileViewModel>()),
+          Padding(
+            padding: const EdgeInsets.only(right: 12.0),
+            child: Material(
+              color: const Color(0xFFF1F5F9),
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                tooltip: 'Profile',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => RiderProfileScreen(profileVm: context.read<RiderProfileViewModel>()),
+                    ),
+                  );
+                },
+                child: const Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: Icon(Icons.person_rounded, color: AppColors.navy, size: 20),
                 ),
-              );
-            },
+              ),
+            ),
           ),
         ],
       ),
@@ -902,7 +963,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                                       const Icon(Icons.local_gas_station, size: 12, color: AppColors.navy),
                                       const SizedBox(width: 4),
                                       Text(
-                                        '⛽ Fuel: ~₦${((selectedCat.estimatedFuelCost > 0 ? selectedCat.estimatedFuelCost : ((selectedCat.distanceKm / 12.0) * (selectedCat.fuelPricePerLiter > 0 ? selectedCat.fuelPricePerLiter : 1400.0)))).toStringAsFixed(0)} (PMS ₦${(selectedCat.fuelPricePerLiter > 0 ? selectedCat.fuelPricePerLiter : 1400.0).toStringAsFixed(0)}/L)',
+                                        '⛽ Fuel: ₦${(selectedCat.fuelPricePerLiter > 0 ? selectedCat.fuelPricePerLiter : 1050.0).toStringAsFixed(0)}/L',
                                         style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.ink),
                                       ),
                                     ],

@@ -6,6 +6,7 @@ import '../../core/constants/app_colors.dart';
 import '../routes/app_routes.dart';
 import '../viewmodels/active_ride_viewmodel.dart';
 import '../viewmodels/ride_viewmodel.dart';
+import '../widgets/realistic_vehicle_card.dart';
 
 /// 12. Driver Assigned Screen
 class DriverAssignedScreen extends StatefulWidget {
@@ -118,6 +119,16 @@ class _DriverAssignedScreenState extends State<DriverAssignedScreen> {
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(height: 16),
+
+              // Realistic Vehicle Graphic Showcase Card
+              RealisticVehicleCard(
+                category: ride?.vehicleCategory ?? driver?.vehicleCategory,
+                make: driver?.vehicleMake,
+                model: driver?.vehicleModel ?? driver?.vehicleDescription,
+                color: driver?.vehicleColor,
+                licensePlate: driver?.licensePlate,
               ),
               const SizedBox(height: 16),
 
